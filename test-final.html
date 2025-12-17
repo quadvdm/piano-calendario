@@ -2,41 +2,117 @@
 <html>
 <head>
     <title>Test Final Login Piano</title>
+    <meta charset="UTF-8">
     <style>
         body {
-            font-family: Arial;
+            font-family: Arial, sans-serif;
             padding: 40px;
             text-align: center;
-            background: #f0f2f5;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
-        .box {
+        
+        .container {
             background: white;
             padding: 30px;
-            border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            max-width: 500px;
-            margin: 0 auto;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            text-align: center;
+            max-width: 600px;
+            width: 100%;
         }
-        .success { color: green; }
-        .error { color: red; }
-        .test-result {
-            margin: 15px 0;
-            padding: 10px;
+        
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+        
+        .piano-icon {
+            font-size: 50px;
+            margin-bottom: 20px;
+        }
+        
+        .config-check {
             background: #f8f9fa;
-            border-radius: 5px;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
             text-align: left;
         }
+        
+        .test-result {
+            margin: 15px 0;
+            padding: 15px;
+            background: #f0f8ff;
+            border-radius: 8px;
+            text-align: left;
+        }
+        
         button {
             background: #4285f4;
             color: white;
             border: none;
             padding: 15px 30px;
-            border-radius: 5px;
-            cursor: pointer;
             font-size: 16px;
-            margin: 10px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 10px 5px;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
         }
-        button:hover { background: #3367d6; }
+        
+        button:hover {
+            background: #3367d6;
+            transform: translateY(-2px);
+        }
+        
+        .btn-success {
+            background: #34a853;
+        }
+        
+        .btn-success:hover {
+            background: #2e8b47;
+        }
+        
+        .status-box {
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            text-align: left;
+            font-size: 14px;
+        }
+        
+        .success { 
+            background: #d4edda; 
+            color: #155724; 
+            border-left: 5px solid #28a745;
+        }
+        
+        .error { 
+            background: #f8d7da; 
+            color: #721c24; 
+            border-left: 5px solid #dc3545;
+        }
+        
+        .warning { 
+            background: #fff3cd; 
+            color: #856404; 
+            border-left: 5px solid #ffc107;
+        }
+        
+        .info { 
+            background: #d1ecf1; 
+            color: #0c5460; 
+            border-left: 5px solid #17a2b8;
+        }
+        
         .url-display {
             background: #e9ecef;
             padding: 10px;
@@ -44,83 +120,184 @@
             font-family: monospace;
             margin: 10px 0;
             word-break: break-all;
+            font-size: 14px;
         }
+        
+        .debug {
+            background: #333;
+            color: #0f0;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 12px;
+            margin-top: 20px;
+            max-height: 200px;
+            overflow-y: auto;
+            text-align: left;
+        }
+        
+        .user-info {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 20px;
+            display: none;
+        }
+        
+        .step {
+            margin: 10px 0;
+            padding: 10px;
+            background: #f0f8ff;
+            border-radius: 5px;
+            text-align: left;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .check { color: #28a745; }
+        .warning-icon { color: #ffc107; }
+        .error-icon { color: #dc3545; }
     </style>
 </head>
 <body>
-    <div class="box">
-        <h1>🎹 Test Final - Login Google</h1>
+    <div class="container">
+        <div class="piano-icon">🎹</div>
+        <h1>🎵 Test Final - Login Google</h1>
         
-        <div class="test-result">
+        <div class="config-check">
             <h3>✅ Configuración Supabase:</h3>
-            <p>URL: https://yhwtlbcckdegbggjaems.supabase.co</p>
-            <p>Google OAuth: Activado y con credenciales</p>
+            <p><strong>URL:</strong> https://yhwtlbcckdegbggjaems.supabase.co</p>
+            <p><strong>Google OAuth:</strong> Activado y con credenciales</p>
         </div>
         
-        <div class="test-result">
+        <div class="config-check">
             <h3>🔍 URI de Redirección REQUERIDA:</h3>
             <div class="url-display">
                 https://yhwtlbcckdegbggjaems.supabase.co/auth/v1/callback
             </div>
             <p>Esta URL DEBE estar en Google Cloud → Credenciales OAuth</p>
+            
+            <div class="step">
+                <span id="redirectCheckIcon" class="warning-icon">⚠️</span>
+                <span id="redirectCheckText">URL actual: https://quadvdm.github.io/piano-calendario/test-final.html</span>
+            </div>
         </div>
         
-        <div class="test-result">
+        <div class="config-check">
             <h3>🔄 Test de Login:</h3>
             <p id="testStatus">Listo para probar...</p>
+            
+            <div id="statusMessage" class="status-box info">
+                Estado: Esperando acción...
+            </div>
+            
+            <div>
+                <button onclick="runFullTest()">
+                    <span style="font-weight:bold;">1.</span> Ejecutar Test Completo
+                </button>
+                
+                <button onclick="directLogin()" class="btn-success">
+                    <span style="font-weight:bold;">2.</span> Login Directo con Google
+                </button>
+            </div>
         </div>
         
-        <button onclick="runFullTest()">Ejecutar Test Completo</button>
-        <button onclick="directLogin()" style="background:#34a853;">Login Directo</button>
+        <div id="userInfo" class="user-info">
+            <h3>✅ Sesión Iniciada Correctamente</h3>
+            <p><strong>Nombre:</strong> <span id="displayName"></span></p>
+            <p><strong>Email:</strong> <span id="displayEmail"></span></p>
+            <p><strong>ID Usuario:</strong> <span id="displayUserId"></span></p>
+            <button onclick="logout()" style="background:#dc3545;">
+                Cerrar Sesión
+            </button>
+        </div>
         
-        <div id="result" style="margin-top:20px;"></div>
+        <div class="debug" id="debugOutput">
+[DEBUG] Consola de mensajes
+====================
+Página cargada correctamente.
+URL: https://quadvdm.github.io/piano-calendario/test-final.html
+        </div>
+        
+        <div style="margin-top:20px; font-size:12px; color:#666;">
+            <p>Si hay problemas, presiona F12 → Console para ver errores detallados</p>
+            <p>GitHub Pages: https://quadvdm.github.io/piano-calendario/</p>
+        </div>
     </div>
 
+    <!-- IMPORTAR SUPABASE SDK -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
     <script>
+        // ================= CONFIGURACIÓN SUPABASE =================
         const SUPABASE_URL = 'https://yhwtlbcckdegbggjaems.supabase.co';
-        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inlod3RsYmNja2RlZ2JnZ2phZW1zIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjU5NDQyODIsImV4cCI6MjA4MTUyMDI4Mn0.ab35WTtpZGJ4VP-3Dkr0SdQN5hK5ZC5uxeVLJiarWs8';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inlod3RsYmNja2RlZ2JnZ2phZW1zIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjU5NDQyODIsImV4cCI6MjA4MTUyMDI4Mn0.ab35WTtpZGJ4VP-3Dkr0SdQN5hK5ZC5uxeVLJiarWs8';
         
-        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        // ================= INICIALIZAR SUPABASE =================
+        let supabase = null;
         
-        function showResult(message, isError = false) {
-            const resultDiv = document.getElementById('result');
-            resultDiv.innerHTML = `<div class="test-result ${isError ? 'error' : 'success'}">${message}</div>`;
-            console.log(isError ? '❌ ' + message : '✅ ' + message);
+        function initSupabase() {
+            try {
+                supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+                addDebug('✅ Supabase inicializado correctamente');
+                return true;
+            } catch (error) {
+                addDebug('❌ Error al inicializar Supabase: ' + error.message);
+                showMessage('Error al conectar con Supabase', 'error');
+                return false;
+            }
+        }
+        
+        // ================= FUNCIONES DE INTERFAZ =================
+        function addDebug(message) {
+            const debugDiv = document.getElementById('debugOutput');
+            const timestamp = new Date().toLocaleTimeString();
+            debugDiv.innerHTML = `[${timestamp}] ${message}<br>` + debugDiv.innerHTML;
+            console.log(message);
+        }
+        
+        function showMessage(text, type = 'info') {
+            const statusDiv = document.getElementById('statusMessage');
+            statusDiv.innerHTML = `<strong>Estado:</strong> ${text}`;
+            statusDiv.className = `status-box ${type}`;
+            addDebug(`${type.toUpperCase()}: ${text}`);
         }
         
         function updateStatus(message) {
             document.getElementById('testStatus').innerHTML = message;
         }
         
+        // ================= FUNCIONES DE AUTH =================
         async function runFullTest() {
-            updateStatus('Iniciando test completo...');
+            if (!initSupabase()) return;
             
-            // Test 1: Conexión a Supabase
+            updateStatus('Ejecutando test completo...');
+            showMessage('Iniciando verificación...', 'info');
+            
             try {
-                updateStatus('Conectando a Supabase...');
-                const { data: { session }, error } = await supabase.auth.getSession();
+                // 1. Verificar conexión
+                addDebug('=== TEST 1: Verificando conexión Supabase ===');
+                const { data: { session }, error: sessionError } = await supabase.auth.getSession();
                 
-                if (error) throw error;
-                
-                showResult('✅ Conexión a Supabase establecida');
-                
-                if (session) {
-                    showResult(`✅ Sesión activa: ${session.user.email}`);
+                if (sessionError) {
+                    showMessage(`❌ Error conexión: ${sessionError.message}`, 'error');
                     return;
                 }
                 
-            } catch (error) {
-                showResult(`❌ Error conexión: ${error.message}`, true);
-                return;
-            }
-            
-            // Test 2: Probar Google OAuth
-            try {
-                updateStatus('Probando Google OAuth...');
+                if (session) {
+                    showUserInfo(session.user);
+                    showMessage(`✅ Ya estás logueado como: ${session.user.email}`, 'success');
+                    return;
+                }
                 
-                // Primero con redirect deshabilitado para ver error
-                const { error: testError } = await supabase.auth.signInWithOAuth({
+                showMessage('✅ Conexión a Supabase establecida', 'success');
+                
+                // 2. Probar Google OAuth (sin redirigir)
+                addDebug('=== TEST 2: Probando Google OAuth ===');
+                updateStatus('Probando configuración Google OAuth...');
+                
+                const { error: oauthError } = await supabase.auth.signInWithOAuth({
                     provider: 'google',
                     options: {
                         redirectTo: window.location.origin,
@@ -128,27 +305,39 @@
                     }
                 });
                 
-                if (testError) {
-                    if (testError.message.includes('redirect_uri')) {
-                        showResult('❌ Error: redirect_uri mismatch', true);
-                        showResult('<strong>Solución:</strong><br>1. Ve a Google Cloud Console<br>2. Credenciales OAuth<br>3. Edita tu credencial<br>4. Añade esta URL exacta:<br>' +
-                                 '<div class="url-display">https://yhwtlbcckdegbggjaems.supabase.co/auth/v1/callback</div>', true);
+                if (oauthError) {
+                    if (oauthError.message.includes('redirect_uri')) {
+                        showMessage('❌ Error: redirect_uri mismatch', 'error');
+                        showMessage(
+                            '<strong>🔥 SOLUCIÓN REQUERIDA:</strong><br>' +
+                            '1. Ve a <a href="https://console.cloud.google.com/" target="_blank">Google Cloud Console</a><br>' +
+                            '2. APIs y Servicios → Credenciales<br>' +
+                            '3. Edita tu credencial OAuth<br>' +
+                            '4. Añade esta URL EXACTA:<br>' +
+                            '<div class="url-display">' + window.location.origin + '</div>' +
+                            '5. Guarda y espera 2-3 minutos',
+                            'error'
+                        );
                     } else {
-                        showResult(`❌ Error: ${testError.message}`, true);
+                        showMessage(`❌ Error Google OAuth: ${oauthError.message}`, 'error');
                     }
                     return;
                 }
                 
-                showResult('✅ Google OAuth configurado correctamente');
-                updateStatus('Listo para login completo');
+                showMessage('✅ Google OAuth configurado correctamente', 'success');
+                updateStatus('✅ Test completo pasado. Listo para login.');
                 
             } catch (error) {
-                showResult(`❌ Error inesperado: ${error.message}`, true);
+                showMessage(`❌ Error inesperado: ${error.message}`, 'error');
+                addDebug('EXCEPCIÓN: ' + error.stack);
             }
         }
         
         async function directLogin() {
+            if (!initSupabase()) return;
+            
             updateStatus('Redirigiendo a Google...');
+            showMessage('Iniciando login con Google...', 'info');
             
             try {
                 const { error } = await supabase.auth.signInWithOAuth({
@@ -163,33 +352,91 @@
                 });
                 
                 if (error) {
-                    showResult(`❌ Error login: ${error.message}`, true);
+                    showMessage(`❌ Error login: ${error.message}`, 'error');
                     
                     // Mostrar ayuda específica
                     if (error.message.includes('redirect_uri')) {
-                        showResult('<h3>⚠️ SOLUCIÓN REQUERIDA:</h3>' +
-                                 '1. Abre <a href="https://console.cloud.google.com/" target="_blank">Google Cloud Console</a><br>' +
-                                 '2. Ve a: APIs y Servicios → Credenciales<br>' +
-                                 '3. Haz clic en tu credencial OAuth<br>' +
-                                 '4. En "URI de redireccionamiento" AÑADE:<br>' +
-                                 '<div class="url-display">https://yhwtlbcckdegbggjaems.supabase.co/auth/v1/callback</div>' +
-                                 '5. Guarda y espera 2-3 minutos<br>' +
-                                 '6. Intenta de nuevo', true);
+                        setTimeout(() => {
+                            alert(
+                                '⚠️ CONFIGURACIÓN REQUERIDA EN GOOGLE CLOUD:\n\n' +
+                                'URL que necesitas añadir:\n' +
+                                window.location.origin + '\n\n' +
+                                'Pasos:\n' +
+                                '1. Ve a Google Cloud Console\n' +
+                                '2. Credenciales OAuth\n' +
+                                '3. Edita tu credencial\n' +
+                                '4. Añade la URL arriba\n' +
+                                '5. Guarda y espera 2-3 minutos'
+                            );
+                        }, 500);
                     }
+                } else {
+                    showMessage('✅ Redirigiendo a Google...', 'success');
                 }
             } catch (error) {
-                showResult(`❌ Error: ${error.message}`, true);
+                showMessage(`❌ Error: ${error.message}`, 'error');
             }
         }
         
-        // Verificar al cargar
-        window.addEventListener('DOMContentLoaded', async () => {
-            const { data: { session } } = await supabase.auth.getSession();
-            if (session) {
-                showResult(`✅ Ya estás logueado como: ${session.user.email}`);
-                updateStatus('Sesión activa');
+        async function logout() {
+            const { error } = await supabase.auth.signOut();
+            if (error) {
+                showMessage('Error al cerrar sesión: ' + error.message, 'error');
+            } else {
+                document.getElementById('userInfo').style.display = 'none';
+                showMessage('✅ Sesión cerrada', 'success');
+                updateStatus('Listo para probar...');
+            }
+        }
+        
+        function showUserInfo(user) {
+            document.getElementById('userInfo').style.display = 'block';
+            document.getElementById('displayName').textContent = 
+                user.user_metadata.full_name || user.email.split('@')[0];
+            document.getElementById('displayEmail').textContent = user.email;
+            document.getElementById('displayUserId').textContent = user.id.substring(0, 8) + '...';
+            
+            updateStatus('✅ Sesión activa');
+        }
+        
+        // ================= INICIALIZACIÓN =================
+        async function initializePage() {
+            // Mostrar URL actual
+            document.getElementById('redirectCheckText').innerHTML = 
+                `<strong>URL actual:</strong> ${window.location.origin}<br>` +
+                `<strong>Redirección a:</strong> https://yhwtlbcckdegbggjaems.supabase.co/auth/v1/callback`;
+            
+            addDebug('Página inicializada');
+            addDebug('URL: ' + window.location.href);
+            addDebug('Origen: ' + window.location.origin);
+            
+            // Verificar si ya está logueado
+            if (initSupabase()) {
+                const { data: { session } } = await supabase.auth.getSession();
+                if (session) {
+                    showUserInfo(session.user);
+                    showMessage(`✅ Sesión activa: ${session.user.email}`, 'success');
+                }
+            }
+        }
+        
+        // ================= ESCUCHAR EVENTOS =================
+        supabase?.auth.onAuthStateChange((event, session) => {
+            addDebug(`Evento auth: ${event}`);
+            
+            if (event === 'SIGNED_IN' && session) {
+                // Recargar para mostrar info
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1000);
+            } else if (event === 'SIGNED_OUT') {
+                document.getElementById('userInfo').style.display = 'none';
+                showMessage('Sesión cerrada', 'info');
             }
         });
+        
+        // ================= INICIAR AL CARGAR =================
+        window.addEventListener('DOMContentLoaded', initializePage);
     </script>
 </body>
 </html>
