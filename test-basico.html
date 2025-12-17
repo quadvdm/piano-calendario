@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test JS Básico</title>
+</head>
+<body>
+    <h1>Test JavaScript Básico</h1>
+    
+    <button onclick="alert('¡Botón funciona!')">Test Alert</button>
+    <button onclick="testConsole()">Test Console</button>
+    <button id="testEvent">Test Event Listener</button>
+    
+    <script>
+        // Test 1: Función simple
+        function testConsole() {
+            console.log('✅ testConsole() ejecutado');
+            alert('Console log enviado');
+        }
+        
+        // Test 2: Event listener
+        document.getElementById('testEvent').addEventListener('click', function() {
+            console.log('✅ Event listener ejecutado');
+            alert('Event listener funciona');
+        });
+        
+        console.log('✅ Script cargado correctamente');
+    </script>
+</body>
+</html>
