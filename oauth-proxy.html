@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>OAuth Proxy Fix</title>
+    <meta charset="UTF-8">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 40px;
+            text-align: center;
+            background: #f0f2f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            max-width: 500px;
+            margin: 0 auto;
+        }
+        .url-box {
+            background: #e9ecef;
+            padding: 10px;
+            border-radius: 5px;
+            font-family: monospace;
+            margin: 15px 0;
+            word-break: break-all;
+            font-size: 12px;
+        }
+        .success { color: #28a745; }
+        .error { color: #dc3545; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔄 OAuth Proxy</h1>
+        <p>Redirigiendo a Supabase con parámetros correctos...</p>
+        <div id="status">
+            <p>Procesando autenticación...</p>
+        </div>
+    </div>
+
+    <script>
+        // Extraer token de la URL (viene de Google)
+        function getHashParams() {
+            const hash = window.location.hash.substring(1);
+            const params = {};
+            
+            hash.split('&').forEach(param => {
+                const [key, value] = param.split('=');
+                params[key] = decodeURIComponent(value);
+            });
+            
+            return params;
+        }
+        
+        // Función principal
+        async function processOAuth() {
+            const params = getHashParams();
+            const statusDiv = document.getElementById('status');
+            
+            console.log('Parámetros recibidos:', params);
+            
+            if (params.access_token) {
+                statusDiv.innerHTML = `
+                    <p class="success">✅ Token recibido de Google</p>
+                    <p>Redirigiendo a Supabase...</p>
+                `;
+                
+                // Redirigir a Supabase con el token
+                setTimeout(() => {
+                    // URL de callback de Supabase (la que NO podemos cambiar)
+                    const supabaseCallback = 'https://yhwtlbcckdegbggjaems.supabase.co/auth/v1/callback';
+                    
+                    // Construir URL con todos los parámetros
+                    const redirectUrl = `${supabaseCallback}#${window.location.hash.substring(1)}`;
+                    
+                    console.log('Redirigiendo a:', redirectUrl);
+                    window.location.href = redirectUrl;
+                }, 1000);
+                
+            } else if (window.location.search.includes('error')) {
+                // Error de Google
+                const urlParams = new URLSearchParams(window.location.search);
+                const error = urlParams.get('error');
+                const errorDesc = urlParams.get('error_description');
+                
+                statusDiv.innerHTML = `
+                    <p class="error">❌ Error de Google OAuth</p>
+                    <p><strong>Error:</strong> ${error || 'Desconocido'}</p>
+                    <p><strong>Descripción:</strong> ${errorDesc || 'Sin descripción'}</p>
+                    <button onclick="retryLogin()">Reintentar</button>
+                `;
+                
+            } else {
+                // No hay token, iniciar flujo OAuth
+                statusDiv.innerHTML = `<p>Iniciando autenticación con Google...</p>`;
+                
+                setTimeout(() => {
+                    startOAuthFlow();
+                }, 500);
+            }
+        }
+        
+        // Iniciar flujo OAuth
+        function startOAuthFlow() {
+            // URL de autorización de Supabase
+            const supabaseUrl = 'https://yhwtlbcckdegbggjaems.supabase.co';
+            
+            // Parámetros para Google OAuth
+            const params = {
+                provider: 'google',
+                redirect_to: 'https://quadvdm.github.io/piano-calendario/oauth-proxy.html'
+            };
+            
+            // Construir URL
+            const authUrl = `${supabaseUrl}/auth/v1/authorize?` +
+                `provider=${params.provider}&` +
+                `redirect_to=${encodeURIComponent(params.redirect_to)}`;
+            
+            console.log('Redirigiendo a:', authUrl);
+            window.location.href = authUrl;
+        }
+        
+        // Reintentar login
+        function retryLogin() {
+            startOAuthFlow();
+        }
+        
+        // Ejecutar al cargar
+        window.addEventListener('DOMContentLoaded', processOAuth);
+    </script>
+</body>
+</html>
