@@ -1,75 +1,181 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Test OAuth GitHub Pages</title>
+    <title>Test OAuth Corregido</title>
     <style>
-        body { font-family: Arial; padding: 40px; text-align: center; }
-        .url-box { background: #f0f0f0; padding: 10px; margin: 10px; border-radius: 5px; font-family: monospace; }
-        .success { color: green; }
-        .error { color: red; }
+        body { 
+            font-family: Arial; 
+            padding: 40px; 
+            text-align: center;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            margin: 0;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            max-width: 600px;
+            margin: 50px auto;
+        }
+        .url-box { 
+            background: #f8f9fa; 
+            padding: 15px; 
+            margin: 15px 0; 
+            border-radius: 8px;
+            text-align: left;
+        }
+        .success { color: #28a745; font-weight: bold; }
+        .error { color: #dc3545; }
+        button {
+            background: #4285f4;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 20px 0;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+        }
+        button:hover { background: #3367d6; }
+        .step {
+            margin: 15px 0;
+            padding: 10px;
+            border-left: 4px solid #007bff;
+            background: #f0f8ff;
+        }
+        code {
+            background: #e9ecef;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: monospace;
+        }
     </style>
 </head>
 <body>
-    <h1>🔧 Test OAuth para GitHub Pages</h1>
-    
-    <div class="url-box">
-        <strong>URL Actual:</strong><br>
-        <span id="currentUrl"></span>
+    <div class="container">
+        <h1>✅ OAuth Funciona - Corrección de Redirección</h1>
+        
+        <div class="step">
+            <h3>🎯 Problema Detectado:</h3>
+            <p>Google está redirigiendo a <code>http://localhost:3000</code> en lugar de a GitHub Pages.</p>
+        </div>
+        
+        <div class="step">
+            <h3>🛠️ Solución Requerida:</h3>
+            <ol>
+                <li>Ve a <strong>Google Cloud Console → Credenciales</strong></li>
+                <li>Edita tu credencial OAuth 2.0</li>
+                <li>En <strong>"URIs de redireccionamiento"</strong>:</li>
+                <li>PON PRIMERO: <code>https://quadvdm.github.io</code></li>
+                <li>Guarda cambios</li>
+                <li>Espera 2-3 minutos</li>
+            </ol>
+        </div>
+        
+        <div class="url-box">
+            <strong>URL Actual:</strong><br>
+            <code id="currentUrl"></code>
+        </div>
+        
+        <div class="url-box">
+            <strong>Redirección Configurada:</strong><br>
+            <code id="redirectUrl"></code>
+        </div>
+        
+        <button onclick="testOAuthFixed()">
+            🔄 Probar OAuth Corregido
+        </button>
+        
+        <div id="result" style="margin-top: 20px;"></div>
+        
+        <div style="margin-top: 30px; font-size: 14px; color: #666;">
+            <p>Después de corregir Google Cloud, prueba también:</p>
+            <p><a href="https://quadvdm.github.io/piano-calendario/test-final.html" target="_blank">
+                test-final.html
+            </a></p>
+        </div>
     </div>
-    
-    <div class="url-box">
-        <strong>Debe estar en Google Cloud:</strong><br>
-        <span id="requiredUrl"></span>
-    </div>
-    
-    <button onclick="testOAuth()" style="padding: 15px 30px; font-size: 16px;">
-        Probar OAuth Ahora
-    </button>
-    
-    <div id="result" style="margin-top: 20px;"></div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
-        document.getElementById('currentUrl').textContent = window.location.origin;
-        document.getElementById('requiredUrl').textContent = window.location.origin;
+        // Mostrar URLs
+        document.getElementById('currentUrl').textContent = window.location.href;
+        document.getElementById('redirectUrl').textContent = 'https://quadvdm.github.io';
         
-        async function testOAuth() {
+        async function testOAuthFixed() {
             const resultDiv = document.getElementById('result');
-            resultDiv.innerHTML = '<p>Probando...</p>';
+            resultDiv.innerHTML = '<div class="step">🔄 Conectando con Google...</div>';
             
             const supabaseUrl = 'https://yhwtlbcckdegbggjaems.supabase.co';
             const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inlod3RsYmNja2RlZ2JnZ2phZW1zIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjU5NDQyODIsImV4cCI6MjA4MTUyMDI4Mn0.ab35WTtpZGJ4VP-3Dkr0SdQN5hK5ZC5uxeVLJiarWs8';
             
             const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
             
-            const { error } = await supabase.auth.signInWithOAuth({
-                provider: 'google',
-                options: {
-                    redirectTo: window.location.origin
-                }
-            });
-            
-            if (error) {
-                resultDiv.innerHTML = `<p class="error">❌ Error: ${error.message}</p>`;
+            try {
+                const { error } = await supabase.auth.signInWithOAuth({
+                    provider: 'google',
+                    options: {
+                        // IMPORTANTE: Especificar la URL completa de redirección
+                        redirectTo: 'https://quadvdm.github.io/piano-calendario/test-oauth.html'
+                    }
+                });
                 
-                if (error.message.includes('redirect_uri')) {
-                    resultDiv.innerHTML += `
-                        <div style="background: #fff3cd; padding: 15px; border-radius: 5px; margin-top: 10px; text-align: left;">
-                            <strong>⚠️ Solución:</strong>
-                            <ol>
-                                <li>Añade esta URL en Google Cloud:<br>
-                                    <code>${window.location.origin}</code>
-                                </li>
-                                <li>Guarda y espera 2 minutos</li>
-                                <li>Intenta de nuevo</li>
-                            </ol>
+                if (error) {
+                    resultDiv.innerHTML = `
+                        <div class="step error">
+                            <h3>❌ Error:</h3>
+                            <p>${error.message}</p>
+                            ${error.message.includes('redirect_uri') ? `
+                                <p><strong>Solución:</strong> Asegúrate que <code>https://quadvdm.github.io</code> 
+                                esté PRIMERO en la lista de URIs de Google Cloud.</p>
+                            ` : ''}
+                        </div>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `
+                        <div class="step success">
+                            <h3>✅ Redirigiendo a Google...</h3>
+                            <p>Si todo está configurado correctamente, deberías volver a esta página.</p>
                         </div>
                     `;
                 }
-            } else {
-                resultDiv.innerHTML = '<p class="success">✅ Redirigiendo a Google...</p>';
+            } catch (err) {
+                resultDiv.innerHTML = `
+                    <div class="step error">
+                        <h3>❌ Error inesperado:</h3>
+                        <p>${err.message}</p>
+                    </div>
+                `;
             }
         }
+        
+        // Verificar si hay sesión activa (después de redirección)
+        async function checkSession() {
+            const supabaseUrl = 'https://yhwtlbcckdegbggjaems.supabase.co';
+            const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inlod3RsYmNja2RlZ2JnZ2phZW1zIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjU5NDQyODIsImV4cCI6MjA4MTUyMDI4Mn0.ab35WTtpZGJ4VP-3Dkr0SdQN5hK5ZC5uxeVLJiarWs8';
+            
+            const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+            const { data: { session } } = await supabase.auth.getSession();
+            
+            if (session) {
+                document.getElementById('result').innerHTML = `
+                    <div class="step success">
+                        <h3>🎉 ¡LOGIN EXITOSO!</h3>
+                        <p><strong>Usuario:</strong> ${session.user.email}</p>
+                        <p><strong>Nombre:</strong> ${session.user.user_metadata.full_name || 'No disponible'}</p>
+                        <p>✅ Google OAuth está funcionando correctamente con GitHub Pages.</p>
+                    </div>
+                `;
+            }
+        }
+        
+        // Ejecutar al cargar
+        window.addEventListener('DOMContentLoaded', checkSession);
     </script>
 </body>
 </html>
