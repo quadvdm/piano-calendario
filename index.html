@@ -1,226 +1,416 @@
 <!DOCTYPE html>
-<html>
+<html lang="es">
 <head>
-    <title>Debug Login Piano</title>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎹 Escuela de Piano - Sistema de Turnos</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        body { font-family: Arial; padding: 20px; background: #f5f5f5; }
-        .container { background: white; padding: 30px; border-radius: 10px; max-width: 800px; margin: 0 auto; }
-        h1 { color: #333; text-align: center; }
-        .config-box { background: #f8f9fa; padding: 15px; border-radius: 8px; margin: 15px 0; border-left: 4px solid #007bff; }
-        .error-box { background: #f8d7da; color: #721c24; padding: 15px; border-radius: 8px; margin: 15px 0; border-left: 4px solid #dc3545; }
-        .success-box { background: #d4edda; color: #155724; padding: 15px; border-radius: 8px; margin: 15px 0; border-left: 4px solid #28a745; }
-        button { background: #4285f4; color: white; border: none; padding: 12px 24px; border-radius: 5px; cursor: pointer; margin: 10px 5px; }
-        button:hover { background: #3367d6; }
-        .code { background: #333; color: #0f0; padding: 15px; border-radius: 5px; font-family: monospace; font-size: 12px; margin: 10px 0; overflow: auto; }
-        .step { margin: 20px 0; padding: 10px; }
-        .url { background: #e9ecef; padding: 8px; border-radius: 4px; font-family: monospace; word-break: break-all; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            width: 100%;
+            max-width: 500px;
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+            color: white;
+            padding: 40px 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2.2rem;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+        }
+        
+        .header h1 i {
+            color: #fbbf24;
+        }
+        
+        .content {
+            padding: 40px 30px;
+            text-align: center;
+        }
+        
+        .login-btn {
+            background: #4285f4;
+            color: white;
+            border: none;
+            padding: 16px 30px;
+            font-size: 1.1rem;
+            border-radius: 12px;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            transition: all 0.3s;
+            font-weight: 600;
+            box-shadow: 0 4px 15px rgba(66, 133, 244, 0.3);
+            margin: 20px 0;
+        }
+        
+        .login-btn:hover {
+            background: #3367d6;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(66, 133, 244, 0.4);
+        }
+        
+        .user-info {
+            display: none;
+            animation: fadeIn 0.5s ease;
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 12px;
+            margin-top: 20px;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        .avatar {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            margin: 0 auto 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8rem;
+            color: white;
+            font-weight: bold;
+        }
+        
+        .welcome-text {
+            font-size: 1.4rem;
+            color: #333;
+            margin-bottom: 10px;
+        }
+        
+        .email-text {
+            color: #666;
+            margin-bottom: 20px;
+        }
+        
+        .actions {
+            display: flex;
+            gap: 15px;
+            margin-top: 25px;
+            justify-content: center;
+        }
+        
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 1rem;
+        }
+        
+        .btn-primary {
+            background: #4f46e5;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #4338ca;
+        }
+        
+        .btn-secondary {
+            background: #f3f4f6;
+            color: #4b5563;
+        }
+        
+        .btn-secondary:hover {
+            background: #e5e7eb;
+        }
+        
+        .status {
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            text-align: left;
+        }
+        
+        .success { background: #d4edda; color: #155724; border-left: 4px solid #28a745; }
+        .error { background: #f8d7da; color: #721c24; border-left: 4px solid #dc3545; }
+        .info { background: #d1ecf1; color: #0c5460; border-left: 4px solid #17a2b8; }
+        
+        .config-info {
+            background: #f0f8ff;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            text-align: left;
+            font-size: 14px;
+        }
+        
+        .config-info code {
+            background: #e9ecef;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+            font-size: 0.9rem;
+            border-top: 1px solid #eee;
+            margin-top: 30px;
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>🔧 Debug Completo - Login Piano</h1>
-        
-        <div class="config-box">
-            <h3>📋 Configuración Actual:</h3>
-            <p><strong>Supabase URL:</strong> <span class="url">https://yhwtlbcckdegbggjaems.supabase.co</span></p>
-            <p><strong>Supabase Key:</strong> <span class="url">eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...</span></p>
-            <p><strong>Google Client ID:</strong> <span class="url">35991205187-6t6jka8t93d4lpua8cgaeu7pgjh4g5ce.apps.googleusercontent.com</span></p>
-            <p><strong>Netlify URL:</strong> <span class="url">https://lovely-lamington-133500.netlify.app</span></p>
+        <div class="header">
+            <h1><i class="fas fa-piano"></i> Escuela de Piano</h1>
+            <p>Sistema de reserva de turnos para alumnos</p>
         </div>
         
-        <div class="step">
-            <h3>1️⃣ Verificar Supabase Connection</h3>
-            <button onclick="testSupabaseConnection()">Probar Conexión Supabase</button>
-            <div id="supabaseResult"></div>
-        </div>
-        
-        <div class="step">
-            <h3>2️⃣ Login Normal (método Supabase)</h3>
-            <button onclick="loginNormal()">Login Normal con Google</button>
-            <div id="normalResult"></div>
-        </div>
-        
-        <div class="step">
-            <h3>3️⃣ Login Manual (URL directa)</h3>
-            <button onclick="loginManual()">Login Manual (URL directa)</button>
-            <div id="manualResult">
-                <p><strong>URL de login manual:</strong></p>
-                <div class="code" id="manualUrl"></div>
+        <div class="content">
+            <div id="statusMessage" class="status info">
+                <p><strong>Estado:</strong> Conectando con Supabase...</p>
+            </div>
+            
+            <div class="config-info">
+                <p><strong>⚠️ CONFIGURACIÓN REQUERIDA EN GOOGLE CLOUD:</strong></p>
+                <p><strong>URIs de redireccionamiento autorizados (DEBE tener SOLO esto):</strong></p>
+                <code>https://yhwtlbcckdegbggjaems.supabase.co/auth/v1/callback</code>
+                <p style="margin-top: 10px; color: #dc3545;">
+                    <i class="fas fa-exclamation-triangle"></i> 
+                    <strong>IMPORTANTE:</strong> Quitar todas las demás URLs, especialmente <code>https://quadvdm.github.io</code> y <code>https://lovely-lamington-133500.netlify.app</code>
+                </p>
+            </div>
+            
+            <button class="login-btn" id="loginBtn" onclick="loginWithGoogle()">
+                <i class="fab fa-google"></i> Iniciar Sesión con Google
+            </button>
+            
+            <div id="userInfo" class="user-info">
+                <div class="avatar" id="userAvatar">
+                    <!-- Avatar aquí -->
+                </div>
+                <h2 class="welcome-text">¡Bienvenido, <span id="userName"></span>!</h2>
+                <p class="email-text"><i class="fas fa-envelope"></i> <span id="userEmail"></span></p>
+                
+                <div class="actions">
+                    <button class="btn btn-primary" onclick="goToCalendar()">
+                        <i class="fas fa-calendar-alt"></i> Ir al Calendario
+                    </button>
+                    <button class="btn btn-secondary" onclick="logout()">
+                        <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
+                    </button>
+                </div>
+            </div>
+            
+            <div class="config-info">
+                <p><strong>🎯 ¿Por qué esta configuración?</strong></p>
+                <p>1. Google envía el token a Supabase (<code>yhwtlbcckdegbggjaems.supabase.co/auth/v1/callback</code>)</p>
+                <p>2. Supabase procesa el token y redirige a Netlify (<code>lovely-lamington-133500.netlify.app</code>)</p>
+                <p>3. ¡Login exitoso!</p>
             </div>
         </div>
         
-        <div class="step">
-            <h3>4️⃣ Ver Sesión Actual</h3>
-            <button onclick="checkSession()">Verificar Sesión</button>
-            <div id="sessionResult"></div>
-        </div>
-        
-        <div class="step">
-            <h3>📝 Debug Console</h3>
-            <div class="code" id="debugConsole">Esperando acciones...</div>
-        </div>
-        
-        <div class="config-box">
-            <h3>⚠️ Problemas Conocidos y Soluciones:</h3>
-            <ol>
-                <li><strong>Google usa GitHub en lugar de Netlify:</strong> Quitar <code>https://quadvdm.github.io</code> de URIs de redirección en Google Cloud</li>
-                <li><strong>Supabase guardó localhost:3000:</strong> Reconfigurar Google provider en Supabase con URL de Netlify</li>
-                <li><strong>Redirect URI mismatch:</strong> Asegurar que Netlify URL esté en ambos lugares (Google Cloud y Supabase)</li>
-            </ol>
+        <div class="footer">
+            <p>© 2024 Escuela de Piano | Sistema OAuth corregido</p>
+            <p id="siteUrl"></p>
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
         // ================= CONFIGURACIÓN =================
         const SUPABASE_URL = 'https://yhwtlbcckdegbggjaems.supabase.co';
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inlod3RsYmNja2RlZ2JnZ2phZW1zIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjU5NDQyODIsImV4cCI6MjA4MTUyMDI4Mn0.ab35WTtpZGJ4VP-3Dkr0SdQN5hK5ZC5uxeVLJiarWs8';
-        const NETLIFY_URL = 'https://lovely-lamington-133500.netlify.app';
         
-        // Mostrar URL manual
-        document.getElementById('manualUrl').textContent = 
-            SUPABASE_URL + '/auth/v1/authorize?provider=google&redirect_to=' + encodeURIComponent(NETLIFY_URL + '/debug-login.html');
+        // Mostrar URL actual
+        document.getElementById('siteUrl').textContent = window.location.href;
         
+        // ================= INICIALIZAR SUPABASE =================
         let supabase = null;
         
-        // ================= FUNCIONES DEBUG =================
-        function addDebug(msg) {
-            const consoleDiv = document.getElementById('debugConsole');
-            const time = new Date().toLocaleTimeString();
-            consoleDiv.innerHTML = `[${time}] ${msg}<br>` + consoleDiv.innerHTML;
-            console.log(msg);
-        }
-        
-        function showResult(divId, msg, type = 'info') {
-            const div = document.getElementById(divId);
-            div.innerHTML = `<div class="${type}-box">${msg}</div>`;
-        }
-        
-        // ================= TEST SUPABASE =================
-        async function testSupabaseConnection() {
-            addDebug('=== TEST SUPABASE CONNECTION ===');
-            
+        function initSupabase() {
             try {
                 supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-                addDebug('✅ Supabase client creado');
-                
-                const { data: { session }, error } = await supabase.auth.getSession();
-                
-                if (error) {
-                    showResult('supabaseResult', `❌ Error: ${error.message}`, 'error');
-                    addDebug(`❌ Error sesión: ${error.message}`);
-                } else if (session) {
-                    showResult('supabaseResult', `✅ Conexión OK. Sesión activa: ${session.user.email}`, 'success');
-                    addDebug(`✅ Sesión activa: ${session.user.email}`);
-                } else {
-                    showResult('supabaseResult', '✅ Conexión OK. No hay sesión activa.', 'success');
-                    addDebug('✅ Conexión OK, sin sesión');
-                }
-            } catch (err) {
-                showResult('supabaseResult', `❌ Excepción: ${err.message}`, 'error');
-                addDebug(`❌ Excepción: ${err.message}`);
+                updateStatus('Supabase conectado', 'success');
+                return true;
+            } catch (error) {
+                updateStatus('Error al conectar con Supabase: ' + error.message, 'error');
+                return false;
             }
         }
         
-        // ================= LOGIN NORMAL =================
-        async function loginNormal() {
-            addDebug('=== LOGIN NORMAL ===');
+        // ================= FUNCIONES DE INTERFAZ =================
+        function updateStatus(message, type = 'info') {
+            const statusDiv = document.getElementById('statusMessage');
+            statusDiv.innerHTML = `<p><strong>Estado:</strong> ${message}</p>`;
+            statusDiv.className = `status ${type}`;
+            console.log(type + ': ' + message);
+        }
+        
+        function showUserInfo(user) {
+            document.getElementById('userInfo').style.display = 'block';
+            document.getElementById('loginBtn').style.display = 'none';
             
-            if (!supabase) {
-                supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+            // Mostrar nombre y email
+            document.getElementById('userName').textContent = 
+                user.user_metadata.full_name || user.email.split('@')[0];
+            document.getElementById('userEmail').textContent = user.email;
+            
+            // Crear avatar
+            const avatarDiv = document.getElementById('userAvatar');
+            const userName = user.user_metadata.full_name || user.email;
+            const initials = userName.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
+            
+            if (user.user_metadata.avatar_url) {
+                avatarDiv.innerHTML = `<img src="${user.user_metadata.avatar_url}" alt="${userName}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`;
+            } else {
+                avatarDiv.innerHTML = `<span>${initials}</span>`;
+                // Color aleatorio para avatar
+                const colors = ['#667eea', '#764ba2', '#f093fb', '#f5576c', '#4facfe'];
+                avatarDiv.style.background = colors[initials.charCodeAt(0) % colors.length];
             }
+            
+            updateStatus('Sesión iniciada correctamente', 'success');
+        }
+        
+        // ================= FUNCIONES DE AUTH =================
+        async function loginWithGoogle() {
+            if (!initSupabase()) return;
+            
+            updateStatus('Conectando con Google...', 'info');
             
             try {
                 const { error } = await supabase.auth.signInWithOAuth({
                     provider: 'google',
                     options: {
-                        redirectTo: NETLIFY_URL + '/debug-login.html'
+                        // ¡IMPORTANTE! Esta es la URL a la que Supabase nos redirigirá DESPUÉS de procesar el token
+                        redirectTo: 'https://lovely-lamington-133500.netlify.app'
                     }
                 });
                 
                 if (error) {
-                    showResult('normalResult', `❌ Error: ${error.message}`, 'error');
-                    addDebug(`❌ Error login: ${error.message}`);
+                    updateStatus('Error: ' + error.message, 'error');
                     
-                    // Diagnóstico específico
+                    // Mostrar ayuda específica para redirect_uri mismatch
                     if (error.message.includes('redirect_uri')) {
-                        addDebug('🔍 PROBLEMA: redirect_uri mismatch');
-                        addDebug('💡 SOLUCIÓN: Verificar Redirect URL en Supabase dashboard');
+                        setTimeout(() => {
+                            alert(
+                                '⚠️ ERROR DE CONFIGURACIÓN EN GOOGLE CLOUD\n\n' +
+                                'Google Cloud → Credenciales OAuth → URIs de redireccionamiento:\n\n' +
+                                'DEBE tener SOLO esta URL:\n' +
+                                'https://yhwtlbcckdegbggjaems.supabase.co/auth/v1/callback\n\n' +
+                                'QUITAR todas las demás URLs, especialmente:\n' +
+                                '- https://quadvdm.github.io\n' +
+                                '- https://lovely-lamington-133500.netlify.app\n\n' +
+                                'Guarda cambios y espera 2-3 minutos.'
+                            );
+                        }, 500);
                     }
                 } else {
-                    showResult('normalResult', '✅ Redirigiendo a Google...', 'success');
-                    addDebug('✅ Redirección iniciada');
+                    updateStatus('Redirigiendo a Google...', 'success');
                 }
             } catch (err) {
-                showResult('normalResult', `❌ Excepción: ${err.message}`, 'error');
-                addDebug(`❌ Excepción login: ${err.message}`);
+                updateStatus('Error inesperado: ' + err.message, 'error');
             }
         }
         
-        // ================= LOGIN MANUAL =================
-        function loginManual() {
-            addDebug('=== LOGIN MANUAL ===');
-            const manualUrl = SUPABASE_URL + '/auth/v1/authorize?provider=google&redirect_to=' + encodeURIComponent(NETLIFY_URL + '/debug-login.html');
-            
-            addDebug(`URL manual: ${manualUrl}`);
-            showResult('manualResult', `✅ Redirigiendo a:<br><div class="url">${manualUrl}</div>`, 'success');
-            
-            // Redirigir después de 2 segundos
-            setTimeout(() => {
-                window.location.href = manualUrl;
-            }, 2000);
+        async function logout() {
+            const { error } = await supabase.auth.signOut();
+            if (error) {
+                updateStatus('Error al cerrar sesión: ' + error.message, 'error');
+            } else {
+                document.getElementById('userInfo').style.display = 'none';
+                document.getElementById('loginBtn').style.display = 'inline-flex';
+                updateStatus('Sesión cerrada', 'info');
+            }
         }
         
-        // ================= VER SESSION =================
+        function goToCalendar() {
+            updateStatus('Redirigiendo al calendario...', 'info');
+            alert('🎉 ¡Login exitoso! El próximo paso es crear el calendario interactivo.');
+            // Aquí irá la redirección al calendario después
+        }
+        
+        // ================= VERIFICAR SESIÓN =================
         async function checkSession() {
-            addDebug('=== CHECK SESSION ===');
-            
-            if (!supabase) {
-                supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-            }
+            if (!initSupabase()) return;
             
             const { data: { user }, error } = await supabase.auth.getUser();
             
             if (error) {
-                showResult('sessionResult', `❌ Error: ${error.message}`, 'error');
-                addDebug(`❌ Error user: ${error.message}`);
-            } else if (user) {
-                showResult('sessionResult', 
-                    `✅ USUARIO AUTENTICADO:<br>
-                    <strong>Email:</strong> ${user.email}<br>
-                    <strong>Nombre:</strong> ${user.user_metadata.full_name || 'No disponible'}<br>
-                    <strong>ID:</strong> ${user.id.substring(0, 8)}...`, 
-                    'success');
-                addDebug(`✅ Usuario: ${user.email}`);
+                updateStatus('Error al verificar sesión: ' + error.message, 'error');
+                return;
+            }
+            
+            if (user) {
+                showUserInfo(user);
             } else {
-                showResult('sessionResult', '⚠️ No hay usuario autenticado', 'error');
-                addDebug('⚠️ Sin usuario');
+                updateStatus('Listo para iniciar sesión', 'info');
             }
         }
         
-        // ================= VERIFICAR AL CARGAR =================
-        window.addEventListener('DOMContentLoaded', async () => {
-            addDebug('Página cargada');
-            addDebug(`URL: ${window.location.href}`);
+        // ================= ESCUCHAR CAMBIOS DE AUTH =================
+        function setupAuthListener() {
+            if (!supabase) return;
             
-            // Verificar si hay parámetros de OAuth en la URL
-            const hash = window.location.hash.substring(1);
-            const search = window.location.search;
-            
-            if (hash || search.includes('error') || search.includes('code')) {
-                addDebug(`Hash encontrado: ${hash.substring(0, 50)}...`);
-                addDebug(`Search: ${search}`);
+            supabase.auth.onAuthStateChange((event, session) => {
+                console.log('Evento auth:', event);
                 
-                showResult('sessionResult', 
-                    `🔍 Parámetros OAuth detectados en URL.<br>
-                    Esto significa que Google redirigió aquí.<br>
-                    <button onclick="checkSession()">Click aquí para procesar</button>`, 
-                    'success');
-            }
+                if (event === 'SIGNED_IN' && session) {
+                    // Recargar para mostrar info del usuario
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1000);
+                } else if (event === 'SIGNED_OUT') {
+                    document.getElementById('userInfo').style.display = 'none';
+                    document.getElementById('loginBtn').style.display = 'inline-flex';
+                    updateStatus('Sesión cerrada', 'info');
+                }
+            });
+        }
+        
+        // ================= INICIALIZAR =================
+        window.addEventListener('DOMContentLoaded', () => {
+            console.log('URL actual:', window.location.href);
+            console.log('Configuración correcta: Google debe redirigir a Supabase, luego Supabase a Netlify');
             
-            // Inicializar Supabase
-            supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+            if (initSupabase()) {
+                checkSession();
+                setupAuthListener();
+            }
         });
     </script>
 </body>
