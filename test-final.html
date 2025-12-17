@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Final Login Piano</title>
+    <style>
+        body {
+            font-family: Arial;
+            padding: 40px;
+            text-align: center;
+            background: #f0f2f5;
+        }
+        .box {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            max-width: 500px;
+            margin: 0 auto;
+        }
+        .success { color: green; }
+        .error { color: red; }
+        .test-result {
+            margin: 15px 0;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 5px;
+            text-align: left;
+        }
+        button {
+            background: #4285f4;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px;
+        }
+        button:hover { background: #3367d6; }
+        .url-display {
+            background: #e9ecef;
+            padding: 10px;
+            border-radius: 5px;
+            font-family: monospace;
+            margin: 10px 0;
+            word-break: break-all;
+        }
+    </style>
+</head>
+<body>
+    <div class="box">
+        <h1>🎹 Test Final - Login Google</h1>
+        
+        <div class="test-result">
+            <h3>✅ Configuración Supabase:</h3>
+            <p>URL: https://yhwtlbcckdegbggjaems.supabase.co</p>
+            <p>Google OAuth: Activado y con credenciales</p>
+        </div>
+        
+        <div class="test-result">
+            <h3>🔍 URI de Redirección REQUERIDA:</h3>
+            <div class="url-display">
+                https://yhwtlbcckdegbggjaems.supabase.co/auth/v1/callback
+            </div>
+            <p>Esta URL DEBE estar en Google Cloud → Credenciales OAuth</p>
+        </div>
+        
+        <div class="test-result">
+            <h3>🔄 Test de Login:</h3>
+            <p id="testStatus">Listo para probar...</p>
+        </div>
+        
+        <button onclick="runFullTest()">Ejecutar Test Completo</button>
+        <button onclick="directLogin()" style="background:#34a853;">Login Directo</button>
+        
+        <div id="result" style="margin-top:20px;"></div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        const SUPABASE_URL = 'https://yhwtlbcckdegbggjaems.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inlod3RsYmNja2RlZ2JnZ2phZW1zIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjU5NDQyODIsImV4cCI6MjA4MTUyMDI4Mn0.ab35WTtpZGJ4VP-3Dkr0SdQN5hK5ZC5uxeVLJiarWs8';
+        
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        
+        function showResult(message, isError = false) {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = `<div class="test-result ${isError ? 'error' : 'success'}">${message}</div>`;
+            console.log(isError ? '❌ ' + message : '✅ ' + message);
+        }
+        
+        function updateStatus(message) {
+            document.getElementById('testStatus').innerHTML = message;
+        }
+        
+        async function runFullTest() {
+            updateStatus('Iniciando test completo...');
+            
+            // Test 1: Conexión a Supabase
+            try {
+                updateStatus('Conectando a Supabase...');
+                const { data: { session }, error } = await supabase.auth.getSession();
+                
+                if (error) throw error;
+                
+                showResult('✅ Conexión a Supabase establecida');
+                
+                if (session) {
+                    showResult(`✅ Sesión activa: ${session.user.email}`);
+                    return;
+                }
+                
+            } catch (error) {
+                showResult(`❌ Error conexión: ${error.message}`, true);
+                return;
+            }
+            
+            // Test 2: Probar Google OAuth
+            try {
+                updateStatus('Probando Google OAuth...');
+                
+                // Primero con redirect deshabilitado para ver error
+                const { error: testError } = await supabase.auth.signInWithOAuth({
+                    provider: 'google',
+                    options: {
+                        redirectTo: window.location.origin,
+                        skipBrowserRedirect: true
+                    }
+                });
+                
+                if (testError) {
+                    if (testError.message.includes('redirect_uri')) {
+                        showResult('❌ Error: redirect_uri mismatch', true);
+                        showResult('<strong>Solución:</strong><br>1. Ve a Google Cloud Console<br>2. Credenciales OAuth<br>3. Edita tu credencial<br>4. Añade esta URL exacta:<br>' +
+                                 '<div class="url-display">https://yhwtlbcckdegbggjaems.supabase.co/auth/v1/callback</div>', true);
+                    } else {
+                        showResult(`❌ Error: ${testError.message}`, true);
+                    }
+                    return;
+                }
+                
+                showResult('✅ Google OAuth configurado correctamente');
+                updateStatus('Listo para login completo');
+                
+            } catch (error) {
+                showResult(`❌ Error inesperado: ${error.message}`, true);
+            }
+        }
+        
+        async function directLogin() {
+            updateStatus('Redirigiendo a Google...');
+            
+            try {
+                const { error } = await supabase.auth.signInWithOAuth({
+                    provider: 'google',
+                    options: {
+                        redirectTo: window.location.origin,
+                        queryParams: {
+                            prompt: 'select_account',
+                            access_type: 'offline'
+                        }
+                    }
+                });
+                
+                if (error) {
+                    showResult(`❌ Error login: ${error.message}`, true);
+                    
+                    // Mostrar ayuda específica
+                    if (error.message.includes('redirect_uri')) {
+                        showResult('<h3>⚠️ SOLUCIÓN REQUERIDA:</h3>' +
+                                 '1. Abre <a href="https://console.cloud.google.com/" target="_blank">Google Cloud Console</a><br>' +
+                                 '2. Ve a: APIs y Servicios → Credenciales<br>' +
+                                 '3. Haz clic en tu credencial OAuth<br>' +
+                                 '4. En "URI de redireccionamiento" AÑADE:<br>' +
+                                 '<div class="url-display">https://yhwtlbcckdegbggjaems.supabase.co/auth/v1/callback</div>' +
+                                 '5. Guarda y espera 2-3 minutos<br>' +
+                                 '6. Intenta de nuevo', true);
+                    }
+                }
+            } catch (error) {
+                showResult(`❌ Error: ${error.message}`, true);
+            }
+        }
+        
+        // Verificar al cargar
+        window.addEventListener('DOMContentLoaded', async () => {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (session) {
+                showResult(`✅ Ya estás logueado como: ${session.user.email}`);
+                updateStatus('Sesión activa');
+            }
+        });
+    </script>
+</body>
+</html>

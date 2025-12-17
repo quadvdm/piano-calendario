@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Escuela de Piano - Login</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 0;
+            padding: 20px;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            text-align: center;
+            max-width: 400px;
+            width: 100%;
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+        
+        .piano-icon {
+            font-size: 50px;
+            margin-bottom: 20px;
+        }
+        
+        button {
+            background: #4285f4;
+            color: white;
+            border: none;
+            padding: 15px 25px;
+            font-size: 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            width: 100%;
+            margin: 10px 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        
+        button:hover {
+            background: #3367d6;
+        }
+        
+        .status {
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            text-align: left;
+            font-size: 14px;
+        }
+        
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        .info { background: #d1ecf1; color: #0c5460; }
+        
+        .user-card {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 20px;
+            display: none;
+        }
+        
+        .step {
+            margin: 10px 0;
+            padding: 10px;
+            background: #f0f8ff;
+            border-radius: 5px;
+            text-align: left;
+        }
+        
+        .check { color: green; }
+        .warning { color: orange; }
+        .error-icon { color: red; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="piano-icon">🎹</div>
+        <h1>Escuela de Piano<br><small>Sistema de Turnos</small></h1>
+        
+        <div class="step">
+            <strong>Proyecto:</strong> yhwtlbcckdegbggjaems ✅
+        </div>
+        
+        <div class="step">
+            <strong>Anon Key:</strong> Configurada ✅
+        </div>
+        
+        <div class="step" id="googleStatus">
+            <strong>Google OAuth:</strong> Probando...
+        </div>
+        
+        <button onclick="loginWithGoogle()" id="loginBtn">
+            <span style="font-size:20px;">G</span> Iniciar con Google
+        </button>
+        
+        <div id="statusMessage" class="status info" style="display:none;">
+            Mensajes aparecerán aquí
+        </div>
+        
+        <div id="userCard" class="user-card">
+            <h3>✅ Sesión Iniciada</h3>
+            <p><strong>Nombre:</strong> <span id="displayName"></span></p>
+            <p><strong>Email:</strong> <span id="displayEmail"></span></p>
+            <button onclick="logout()" style="background:#dc3545;">
+                Cerrar Sesión
+            </button>
+        </div>
+        
+        <div style="margin-top:20px; font-size:12px; color:#666;">
+            Si hay problemas, presiona F12 y mira la Consola
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        // TU CONFIGURACIÓN - YA CON LA KEY CORRECTA
+        const SUPABASE_URL = 'https://yhwtlbcckdegbggjaems.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inlod3RsYmNja2RlZ2JnZ2phZW1zIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjU5NDQyODIsImV4cCI6MjA4MTUyMDI4Mn0.ab35WTtpZGJ4VP-3Dkr0SdQN5hK5ZC5uxeVLJiarWs8';
+        
+        // Inicializar Supabase
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        
+        // Mostrar mensaje
+        function showMessage(text, type = 'info') {
+            const msg = document.getElementById('statusMessage');
+            msg.innerHTML = text;
+            msg.className = 'status ' + type;
+            msg.style.display = 'block';
+            console.log(type.toUpperCase() + ': ' + text);
+        }
+        
+        // Actualizar estado Google
+        function updateGoogleStatus(status, message) {
+            const googleDiv = document.getElementById('googleStatus');
+            let icon = '❓';
+            if (status === 'success') icon = '✅';
+            if (status === 'error') icon = '❌';
+            if (status === 'warning') icon = '⚠️';
+            
+            googleDiv.innerHTML = `<strong>Google OAuth:</strong> ${icon} ${message}`;
+        }
+        
+        // Login con Google
+        async function loginWithGoogle() {
+            showMessage('Conectando con Google...', 'info');
+            updateGoogleStatus('warning', 'Conectando...');
+            
+            try {
+                const { data, error } = await supabase.auth.signInWithOAuth({
+                    provider: 'google',
+                    options: {
+                        redirectTo: window.location.origin
+                    }
+                });
+                
+                if (error) {
+                    showMessage('Error: ' + error.message, 'error');
+                    updateGoogleStatus('error', 'Error: ' + error.message);
+                    console.error('Detalles del error:', error);
+                } else {
+                    showMessage('Redirigiendo a Google...', 'success');
+                    updateGoogleStatus('success', 'Redirigiendo...');
+                }
+            } catch (err) {
+                showMessage('Error inesperado: ' + err.message, 'error');
+                updateGoogleStatus('error', 'Error inesperado');
+            }
+        }
+        
+        // Logout
+        async function logout() {
+            const { error } = await supabase.auth.signOut();
+            if (error) {
+                showMessage('Error al cerrar: ' + error.message, 'error');
+            } else {
+                document.getElementById('userCard').style.display = 'none';
+                showMessage('Sesión cerrada', 'info');
+            }
+        }
+        
+        // Verificar si ya hay sesión
+        async function checkCurrentSession() {
+            const { data: { session }, error } = await supabase.auth.getSession();
+            
+            if (error) {
+                console.error('Error al verificar sesión:', error);
+                return;
+            }
+            
+            if (session) {
+                // Mostrar info del usuario
+                document.getElementById('displayName').textContent = 
+                    session.user.user_metadata.full_name || session.user.email.split('@')[0];
+                document.getElementById('displayEmail').textContent = session.user.email;
+                document.getElementById('userCard').style.display = 'block';
+                
+                showMessage('Ya estás logueado!', 'success');
+                updateGoogleStatus('success', 'Configurado y funcionando');
+            } else {
+                updateGoogleStatus('warning', 'No probado aún');
+            }
+        }
+        
+        // Escuchar cambios de autenticación
+        supabase.auth.onAuthStateChange((event, session) => {
+            console.log('Evento de autenticación:', event);
+            
+            if (event === 'SIGNED_IN' && session) {
+                // Recargar para mostrar info
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1000);
+            }
+        });
+        
+        // Al cargar la página
+        window.addEventListener('DOMContentLoaded', () => {
+            console.log('Página cargada. URL Supabase:', SUPABASE_URL);
+            checkCurrentSession();
+        });
+    </script>
+</body>
+</html>
