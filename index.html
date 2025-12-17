@@ -3,415 +3,126 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🎹 Escuela de Piano - Sistema de Turnos</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <title>Escuela de Piano - Prueba Login</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-        
         body {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 20px;
+            font-family: Arial, sans-serif;
+            text-align: center;
+            padding-top: 50px;
         }
-        
-        .container {
-            background: white;
-            border-radius: 20px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-            width: 100%;
+        button {
+            background-color: #4285f4;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 20px;
+        }
+        #status {
+            margin: 20px auto;
+            padding: 15px;
             max-width: 500px;
-            overflow: hidden;
+            border-radius: 5px;
+            background-color: #f0f8ff;
         }
-        
-        .header {
-            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
-            color: white;
-            padding: 40px 30px;
-            text-align: center;
-        }
-        
-        .header h1 {
-            font-size: 2.2rem;
-            margin-bottom: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 15px;
-        }
-        
-        .header h1 i {
-            color: #fbbf24;
-        }
-        
-        .content {
-            padding: 40px 30px;
-            text-align: center;
-        }
-        
-        .login-btn {
-            background: #4285f4;
-            color: white;
-            border: none;
-            padding: 16px 30px;
-            font-size: 1.1rem;
-            border-radius: 12px;
-            cursor: pointer;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 15px;
-            transition: all 0.3s;
-            font-weight: 600;
-            box-shadow: 0 4px 15px rgba(66, 133, 244, 0.3);
-            margin: 20px 0;
-        }
-        
-        .login-btn:hover {
-            background: #3367d6;
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(66, 133, 244, 0.4);
-        }
-        
-        .user-info {
-            display: none;
-            animation: fadeIn 0.5s ease;
-            background: #f8f9fa;
-            padding: 25px;
-            border-radius: 12px;
-            margin-top: 20px;
-        }
-        
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-        
-        .avatar {
-            width: 80px;
-            height: 80px;
-            border-radius: 50%;
-            margin: 0 auto 15px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.8rem;
-            color: white;
-            font-weight: bold;
-        }
-        
-        .welcome-text {
-            font-size: 1.4rem;
-            color: #333;
-            margin-bottom: 10px;
-        }
-        
-        .email-text {
-            color: #666;
-            margin-bottom: 20px;
-        }
-        
-        .actions {
-            display: flex;
-            gap: 15px;
-            margin-top: 25px;
-            justify-content: center;
-        }
-        
-        .btn {
-            padding: 12px 24px;
-            border: none;
-            border-radius: 8px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s;
-            font-size: 1rem;
-        }
-        
-        .btn-primary {
-            background: #4f46e5;
-            color: white;
-        }
-        
-        .btn-primary:hover {
-            background: #4338ca;
-        }
-        
-        .btn-secondary {
-            background: #f3f4f6;
-            color: #4b5563;
-        }
-        
-        .btn-secondary:hover {
-            background: #e5e7eb;
-        }
-        
-        .status {
-            padding: 15px;
-            border-radius: 8px;
-            margin: 20px 0;
-            text-align: left;
-        }
-        
-        .success { background: #d4edda; color: #155724; border-left: 4px solid #28a745; }
-        .error { background: #f8d7da; color: #721c24; border-left: 4px solid #dc3545; }
-        .info { background: #d1ecf1; color: #0c5460; border-left: 4px solid #17a2b8; }
-        
-        .config-info {
-            background: #f0f8ff;
-            padding: 15px;
-            border-radius: 8px;
-            margin: 20px 0;
-            text-align: left;
-            font-size: 14px;
-        }
-        
-        .config-info code {
-            background: #e9ecef;
-            padding: 2px 6px;
-            border-radius: 4px;
-            font-family: monospace;
-            font-size: 12px;
-        }
-        
-        .footer {
-            text-align: center;
-            padding: 20px;
-            color: #666;
-            font-size: 0.9rem;
-            border-top: 1px solid #eee;
-            margin-top: 30px;
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <h1><i class="fas fa-piano"></i> Escuela de Piano</h1>
-            <p>Sistema de reserva de turnos para alumnos</p>
-        </div>
-        
-        <div class="content">
-            <div id="statusMessage" class="status info">
-                <p><strong>Estado:</strong> Conectando con Supabase...</p>
-            </div>
-            
-            <div class="config-info">
-                <p><strong>⚠️ CONFIGURACIÓN REQUERIDA EN GOOGLE CLOUD:</strong></p>
-                <p><strong>URIs de redireccionamiento autorizados (DEBE tener SOLO esto):</strong></p>
-                <code>https://yhwtlbcckdegbggjaems.supabase.co/auth/v1/callback</code>
-                <p style="margin-top: 10px; color: #dc3545;">
-                    <i class="fas fa-exclamation-triangle"></i> 
-                    <strong>IMPORTANTE:</strong> Quitar todas las demás URLs, especialmente <code>https://quadvdm.github.io</code> y <code>https://lovely-lamington-133500.netlify.app</code>
-                </p>
-            </div>
-            
-            <button class="login-btn" id="loginBtn" onclick="loginWithGoogle()">
-                <i class="fab fa-google"></i> Iniciar Sesión con Google
-            </button>
-            
-            <div id="userInfo" class="user-info">
-                <div class="avatar" id="userAvatar">
-                    <!-- Avatar aquí -->
-                </div>
-                <h2 class="welcome-text">¡Bienvenido, <span id="userName"></span>!</h2>
-                <p class="email-text"><i class="fas fa-envelope"></i> <span id="userEmail"></span></p>
-                
-                <div class="actions">
-                    <button class="btn btn-primary" onclick="goToCalendar()">
-                        <i class="fas fa-calendar-alt"></i> Ir al Calendario
-                    </button>
-                    <button class="btn btn-secondary" onclick="logout()">
-                        <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
-                    </button>
-                </div>
-            </div>
-            
-            <div class="config-info">
-                <p><strong>🎯 ¿Por qué esta configuración?</strong></p>
-                <p>1. Google envía el token a Supabase (<code>yhwtlbcckdegbggjaems.supabase.co/auth/v1/callback</code>)</p>
-                <p>2. Supabase procesa el token y redirige a Netlify (<code>lovely-lamington-133500.netlify.app</code>)</p>
-                <p>3. ¡Login exitoso!</p>
-            </div>
-        </div>
-        
-        <div class="footer">
-            <p>© 2024 Escuela de Piano | Sistema OAuth corregido</p>
-            <p id="siteUrl"></p>
-        </div>
+
+    <h1>🎹 Escuela de Piano - Prueba de Login</h1>
+    <p>URL de la prueba: <strong id="currentUrl"></strong></p>
+    <p>Site URL configurada en Supabase: <strong id="siteUrlTarget"></strong></p>
+
+    <div id="status">Haz clic en el botón para iniciar.</div>
+
+    <button onclick="loginWithGoogle()">Iniciar Sesión con Google</button>
+    <div id="userInfo" style="display:none; margin-top: 20px;">
+        <h3>✅ ¡Sesión Iniciada!</h3>
+        <p id="userName"></p>
+        <button onclick="logout()">Cerrar Sesión</button>
     </div>
 
     <script>
-        // ================= CONFIGURACIÓN =================
+        // 1. CONFIGURACIÓN - Reemplaza con tus valores si es necesario
         const SUPABASE_URL = 'https://yhwtlbcckdegbggjaems.supabase.co';
-        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inlod3RsYmNja2RlZ2JnZ2phZW1zIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjU5NDQyODIsImV4cCI6MjA4MTUyMDI4Mn0.ab35WTtpZGJ4VP-3Dkr0SdQN5hK5ZC5uxeVLJiarWs8';
-        
-        // Mostrar URL actual
-        document.getElementById('siteUrl').textContent = window.location.href;
-        
-        // ================= INICIALIZAR SUPABASE =================
-        let supabase = null;
-        
-        function initSupabase() {
-            try {
-                supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-                updateStatus('Supabase conectado', 'success');
-                return true;
-            } catch (error) {
-                updateStatus('Error al conectar con Supabase: ' + error.message, 'error');
-                return false;
-            }
-        }
-        
-        // ================= FUNCIONES DE INTERFAZ =================
-        function updateStatus(message, type = 'info') {
-            const statusDiv = document.getElementById('statusMessage');
-            statusDiv.innerHTML = `<p><strong>Estado:</strong> ${message}</p>`;
-            statusDiv.className = `status ${type}`;
-            console.log(type + ': ' + message);
-        }
-        
-        function showUserInfo(user) {
-            document.getElementById('userInfo').style.display = 'block';
-            document.getElementById('loginBtn').style.display = 'none';
-            
-            // Mostrar nombre y email
-            document.getElementById('userName').textContent = 
-                user.user_metadata.full_name || user.email.split('@')[0];
-            document.getElementById('userEmail').textContent = user.email;
-            
-            // Crear avatar
-            const avatarDiv = document.getElementById('userAvatar');
-            const userName = user.user_metadata.full_name || user.email;
-            const initials = userName.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
-            
-            if (user.user_metadata.avatar_url) {
-                avatarDiv.innerHTML = `<img src="${user.user_metadata.avatar_url}" alt="${userName}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`;
-            } else {
-                avatarDiv.innerHTML = `<span>${initials}</span>`;
-                // Color aleatorio para avatar
-                const colors = ['#667eea', '#764ba2', '#f093fb', '#f5576c', '#4facfe'];
-                avatarDiv.style.background = colors[initials.charCodeAt(0) % colors.length];
-            }
-            
-            updateStatus('Sesión iniciada correctamente', 'success');
-        }
-        
-        // ================= FUNCIONES DE AUTH =================
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inlod3RsYmNja2RlZ2JnZ2phZW1zIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjU5NDQyODIsImV4cCI6MjA4MTUyMDI4Mn0.ab35WTtpZGJ4VP-3Dkr0SdQN5hK5ZC5uxeVLJiarWs8';
+        // Esta es la URL a la que Supabase te redirigirá. Debe coincidir con la "Site URL" en el Dashboard de Supabase.
+        const SITE_REDIRECT_URL = 'https://lovely-lamington-133500.netlify.app';
+
+        // Mostrar URLs en pantalla para referencia
+        document.getElementById('currentUrl').textContent = window.location.href;
+        document.getElementById('siteUrlTarget').textContent = SITE_REDIRECT_URL;
+
+        // 2. Inicializar cliente Supabase
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        console.log("Cliente Supabase inicializado para:", SUPABASE_URL);
+
+        // 3. Función principal de Login
         async function loginWithGoogle() {
-            if (!initSupabase()) return;
-            
-            updateStatus('Conectando con Google...', 'info');
-            
+            console.log("Función loginWithGoogle() ejecutada.");
+            document.getElementById('status').innerHTML = "🔗 Conectando con Google...";
+
             try {
-                const { error } = await supabase.auth.signInWithOAuth({
+                const { data, error } = await supabase.auth.signInWithOAuth({
                     provider: 'google',
                     options: {
-                        // ¡IMPORTANTE! Esta es la URL a la que Supabase nos redirigirá DESPUÉS de procesar el token
-                        redirectTo: 'https://lovely-lamington-133500.netlify.app'
+                        // El parámetro 'redirectTo' es clave. Indica a dónde irá el usuario tras la autenticación.
+                        redirectTo: SITE_REDIRECT_URL
                     }
                 });
-                
+
                 if (error) {
-                    updateStatus('Error: ' + error.message, 'error');
-                    
-                    // Mostrar ayuda específica para redirect_uri mismatch
-                    if (error.message.includes('redirect_uri')) {
-                        setTimeout(() => {
-                            alert(
-                                '⚠️ ERROR DE CONFIGURACIÓN EN GOOGLE CLOUD\n\n' +
-                                'Google Cloud → Credenciales OAuth → URIs de redireccionamiento:\n\n' +
-                                'DEBE tener SOLO esta URL:\n' +
-                                'https://yhwtlbcckdegbggjaems.supabase.co/auth/v1/callback\n\n' +
-                                'QUITAR todas las demás URLs, especialmente:\n' +
-                                '- https://quadvdm.github.io\n' +
-                                '- https://lovely-lamington-133500.netlify.app\n\n' +
-                                'Guarda cambios y espera 2-3 minutos.'
-                            );
-                        }, 500);
+                    console.error("Error de Supabase al iniciar OAuth:", error);
+                    document.getElementById('status').innerHTML = `<span class="error">❌ Error: ${error.message}</span>`;
+                    // Si el error es de redirección, te dará una pista clara.
+                    if (error.message.includes('redirect')) {
+                        document.getElementById('status').innerHTML += `<p><small>Asegúrate de que <strong>${SITE_REDIRECT_URL}</strong> esté en "Site URL" y "Redirect URLs" en el Dashboard de Supabase.</small></p>`;
                     }
                 } else {
-                    updateStatus('Redirigiendo a Google...', 'success');
+                    console.log("Redirección iniciada hacia:", data?.url || 'Google');
+                    document.getElementById('status').innerHTML = "✅ Redirigiendo a Google...";
+                    // El navegador se redirigirá automáticamente. No necesitas hacer nada más aquí.
                 }
             } catch (err) {
-                updateStatus('Error inesperado: ' + err.message, 'error');
+                console.error("Error inesperado:", err);
+                document.getElementById('status').innerHTML = `<span class="error">⚠️ Error inesperado: ${err.message}</span>`;
             }
         }
-        
+
+        // 4. Verificar si el usuario ya tiene una sesión activa (al cargar la página)
+        async function checkUser() {
+            const { data: { session }, error } = await supabase.auth.getSession();
+            if (error) {
+                console.warn("Error al verificar sesión:", error);
+            } else if (session?.user) {
+                showUserInfo(session.user);
+            }
+        }
+
+        function showUserInfo(user) {
+            document.getElementById('userName').textContent = `Hola, ${user.email}`;
+            document.getElementById('userInfo').style.display = 'block';
+            document.getElementById('status').innerHTML = "✅ Ya tienes una sesión activa.";
+        }
+
         async function logout() {
             const { error } = await supabase.auth.signOut();
-            if (error) {
-                updateStatus('Error al cerrar sesión: ' + error.message, 'error');
-            } else {
+            if (!error) {
                 document.getElementById('userInfo').style.display = 'none';
-                document.getElementById('loginBtn').style.display = 'inline-flex';
-                updateStatus('Sesión cerrada', 'info');
+                document.getElementById('status').innerHTML = "Sesión cerrada.";
             }
         }
-        
-        function goToCalendar() {
-            updateStatus('Redirigiendo al calendario...', 'info');
-            alert('🎉 ¡Login exitoso! El próximo paso es crear el calendario interactivo.');
-            // Aquí irá la redirección al calendario después
-        }
-        
-        // ================= VERIFICAR SESIÓN =================
-        async function checkSession() {
-            if (!initSupabase()) return;
-            
-            const { data: { user }, error } = await supabase.auth.getUser();
-            
-            if (error) {
-                updateStatus('Error al verificar sesión: ' + error.message, 'error');
-                return;
-            }
-            
-            if (user) {
-                showUserInfo(user);
-            } else {
-                updateStatus('Listo para iniciar sesión', 'info');
-            }
-        }
-        
-        // ================= ESCUCHAR CAMBIOS DE AUTH =================
-        function setupAuthListener() {
-            if (!supabase) return;
-            
-            supabase.auth.onAuthStateChange((event, session) => {
-                console.log('Evento auth:', event);
-                
-                if (event === 'SIGNED_IN' && session) {
-                    // Recargar para mostrar info del usuario
-                    setTimeout(() => {
-                        window.location.reload();
-                    }, 1000);
-                } else if (event === 'SIGNED_OUT') {
-                    document.getElementById('userInfo').style.display = 'none';
-                    document.getElementById('loginBtn').style.display = 'inline-flex';
-                    updateStatus('Sesión cerrada', 'info');
-                }
-            });
-        }
-        
-        // ================= INICIALIZAR =================
-        window.addEventListener('DOMContentLoaded', () => {
-            console.log('URL actual:', window.location.href);
-            console.log('Configuración correcta: Google debe redirigir a Supabase, luego Supabase a Netlify');
-            
-            if (initSupabase()) {
-                checkSession();
-                setupAuthListener();
-            }
-        });
+
+        // 5. Ejecutar la verificación de usuario cuando se carga la página
+        window.addEventListener('DOMContentLoaded', checkUser);
     </script>
+
 </body>
 </html>
