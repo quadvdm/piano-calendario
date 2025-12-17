@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Login Corregido - Piano</title>
+    <meta charset="UTF-8">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            width: 100%;
+            max-width: 500px;
+            overflow: hidden;
+            animation: slideUp 0.5s ease;
+        }
+        
+        @keyframes slideUp {
+            from { transform: translateY(30px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+            color: white;
+            padding: 40px 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2.2rem;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+        }
+        
+        .header h1 i {
+            color: #fbbf24;
+        }
+        
+        .content {
+            padding: 40px 30px;
+            text-align: center;
+        }
+        
+        .login-btn {
+            background: #4285f4;
+            color: white;
+            border: none;
+            padding: 16px 30px;
+            font-size: 1.1rem;
+            border-radius: 12px;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            transition: all 0.3s;
+            font-weight: 600;
+            box-shadow: 0 4px 15px rgba(66, 133, 244, 0.3);
+            margin: 20px 0;
+        }
+        
+        .login-btn:hover {
+            background: #3367d6;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(66, 133, 244, 0.4);
+        }
+        
+        .solution-box {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 20px;
+            margin: 20px 0;
+            text-align: left;
+            border-radius: 8px;
+        }
+        
+        .solution-box h3 {
+            color: #856404;
+            margin-bottom: 10px;
+        }
+        
+        .solution-box ol {
+            margin-left: 20px;
+            margin-top: 10px;
+        }
+        
+        .url-display {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 5px;
+            font-family: monospace;
+            margin: 10px 0;
+            word-break: break-all;
+            font-size: 12px;
+        }
+        
+        .user-info {
+            display: none;
+            animation: fadeIn 0.5s ease;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+            font-size: 0.9rem;
+            border-top: 1px solid #eee;
+            margin-top: 30px;
+        }
+    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1><i class="fas fa-piano"></i> Escuela de Piano</h1>
+            <p>Sistema de Turnos - Solución Definitiva</p>
+        </div>
+        
+        <div class="content">
+            <div class="solution-box">
+                <h3>🛠️ Solución Implementada:</h3>
+                <p>Usamos un <strong>proxy intermedio</strong> para solucionar el problema de redirección.</p>
+                <ol>
+                    <li>Google → Nuestro Proxy (GitHub Pages)</li>
+                    <li>Proxy → Supabase (con URL correcta)</li>
+                    <li>✅ Login funciona correctamente</li>
+                </ol>
+            </div>
+            
+            <button class="login-btn" onclick="startFixedLogin()">
+                <i class="fab fa-google"></i> Iniciar Sesión con Google (Corregido)
+            </button>
+            
+            <div id="userInfo" class="user-info">
+                <h3>✅ Sesión Iniciada</h3>
+                <p><strong>Nombre:</strong> <span id="userName"></span></p>
+                <p><strong>Email:</strong> <span id="userEmail"></span></p>
+                <button class="login-btn" onclick="checkSession()" style="background:#34a853;">
+                    <i class="fas fa-sync-alt"></i> Verificar Sesión
+                </button>
+            </div>
+            
+            <div style="margin-top: 30px; font-size: 14px; color: #666;">
+                <p><strong>Flujo corregido:</strong></p>
+                <div class="url-display">
+                    Google → https://quadvdm.github.io/piano-calendario/oauth-proxy.html
+                </div>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p>© 2024 Escuela de Piano | Solución Proxy OAuth</p>
+            <p>https://quadvdm.github.io/piano-calendario/</p>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        // CONFIGURACIÓN
+        const SUPABASE_URL = 'https://yhwtlbcckdegbggjaems.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inlod3RsYmNja2RlZ2JnZ2phZW1zIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjU5NDQyODIsImV4cCI6MjA4MTUyMDI4Mn0.ab35WTtpZGJ4VP-3Dkr0SdQN5hK5ZC5uxeVLJiarWs8';
+        
+        // Inicializar
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        
+        // Login corregido
+        function startFixedLogin() {
+            // Usar nuestro proxy intermedio
+            const proxyUrl = 'https://quadvdm.github.io/piano-calendario/oauth-proxy.html';
+            
+            // Construir URL de autorización manualmente
+            const authUrl = `${SUPABASE_URL}/auth/v1/authorize?` +
+                `provider=google&` +
+                `redirect_to=${encodeURIComponent(proxyUrl)}`;
+            
+            console.log('Iniciando login corregido:', authUrl);
+            window.location.href = authUrl;
+        }
+        
+        // Verificar sesión
+        async function checkSession() {
+            const { data: { user }, error } = await supabase.auth.getUser();
+            
+            if (error) {
+                alert('Error: ' + error.message);
+                return;
+            }
+            
+            if (user) {
+                document.getElementById('userInfo').style.display = 'block';
+                document.getElementById('userName').textContent = 
+                    user.user_metadata.full_name || user.email.split('@')[0];
+                document.getElementById('userEmail').textContent = user.email;
+                
+                alert('✅ ¡Sesión activa! Puedes continuar con el calendario.');
+            } else {
+                alert('⚠️ No hay sesión activa. Inicia sesión primero.');
+            }
+        }
+        
+        // Verificar al cargar si ya estamos autenticados
+        async function checkOnLoad() {
+            const { data: { session } } = await supabase.auth.getSession();
+            
+            if (session) {
+                document.getElementById('userInfo').style.display = 'block';
+                document.getElementById('userName').textContent = 
+                    session.user.user_metadata.full_name || session.user.email.split('@')[0];
+                document.getElementById('userEmail').textContent = session.user.email;
+            }
+        }
+        
+        // Ejecutar al cargar
+        window.addEventListener('DOMContentLoaded', checkOnLoad);
+    </script>
+</body>
+</html>
