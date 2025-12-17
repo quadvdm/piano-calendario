@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test OAuth GitHub Pages</title>
+    <style>
+        body { font-family: Arial; padding: 40px; text-align: center; }
+        .url-box { background: #f0f0f0; padding: 10px; margin: 10px; border-radius: 5px; font-family: monospace; }
+        .success { color: green; }
+        .error { color: red; }
+    </style>
+</head>
+<body>
+    <h1>🔧 Test OAuth para GitHub Pages</h1>
+    
+    <div class="url-box">
+        <strong>URL Actual:</strong><br>
+        <span id="currentUrl"></span>
+    </div>
+    
+    <div class="url-box">
+        <strong>Debe estar en Google Cloud:</strong><br>
+        <span id="requiredUrl"></span>
+    </div>
+    
+    <button onclick="testOAuth()" style="padding: 15px 30px; font-size: 16px;">
+        Probar OAuth Ahora
+    </button>
+    
+    <div id="result" style="margin-top: 20px;"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        document.getElementById('currentUrl').textContent = window.location.origin;
+        document.getElementById('requiredUrl').textContent = window.location.origin;
+        
+        async function testOAuth() {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = '<p>Probando...</p>';
+            
+            const supabaseUrl = 'https://yhwtlbcckdegbggjaems.supabase.co';
+            const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inlod3RsYmNja2RlZ2JnZ2phZW1zIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjU5NDQyODIsImV4cCI6MjA4MTUyMDI4Mn0.ab35WTtpZGJ4VP-3Dkr0SdQN5hK5ZC5uxeVLJiarWs8';
+            
+            const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+            
+            const { error } = await supabase.auth.signInWithOAuth({
+                provider: 'google',
+                options: {
+                    redirectTo: window.location.origin
+                }
+            });
+            
+            if (error) {
+                resultDiv.innerHTML = `<p class="error">❌ Error: ${error.message}</p>`;
+                
+                if (error.message.includes('redirect_uri')) {
+                    resultDiv.innerHTML += `
+                        <div style="background: #fff3cd; padding: 15px; border-radius: 5px; margin-top: 10px; text-align: left;">
+                            <strong>⚠️ Solución:</strong>
+                            <ol>
+                                <li>Añade esta URL en Google Cloud:<br>
+                                    <code>${window.location.origin}</code>
+                                </li>
+                                <li>Guarda y espera 2 minutos</li>
+                                <li>Intenta de nuevo</li>
+                            </ol>
+                        </div>
+                    `;
+                }
+            } else {
+                resultDiv.innerHTML = '<p class="success">✅ Redirigiendo a Google...</p>';
+            }
+        }
+    </script>
+</body>
+</html>
