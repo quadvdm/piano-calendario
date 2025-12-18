@@ -3,55 +3,299 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🎹 Escuela de Piano</title>
+    <title>🎹 Escuela de Piano - Sistema de Reservas</title>
     <style>
-        body { font-family: Arial; text-align: center; padding: 50px; }
+        body { 
+            font-family: 'Arial', sans-serif; 
+            text-align: center; 
+            padding: 50px;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+        
         .login-btn {
-            background: #4285f4;
+            background: linear-gradient(135deg, #4285f4 0%, #34a853 100%);
             color: white;
             border: none;
-            padding: 15px 30px;
-            font-size: 16px;
-            border-radius: 8px;
+            padding: 18px 36px;
+            font-size: 18px;
+            border-radius: 50px;
             cursor: pointer;
-            margin: 20px;
+            margin: 30px 0;
+            transition: transform 0.3s, box-shadow 0.3s;
+            font-weight: bold;
+            box-shadow: 0 4px 15px rgba(66, 133, 244, 0.3);
         }
-        .login-btn:hover { background: #3367d6; }
+        
+        .login-btn:hover { 
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(66, 133, 244, 0.4);
+        }
+        
+        .user-info {
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 15px;
+            margin: 30px 0;
+            border-left: 5px solid #4285f4;
+        }
+        
+        .calendar-placeholder {
+            background: #f0f2f5;
+            padding: 40px;
+            border-radius: 15px;
+            margin: 30px 0;
+            border: 2px dashed #ddd;
+        }
+        
+        .logout-btn {
+            background: #ea4335;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 25px;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+        
+        .hidden { display: none; }
+        
+        .error-message {
+            background: #ffebee;
+            color: #c62828;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+        
+        h1 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+        
+        .piano-icon {
+            font-size: 48px;
+            margin-bottom: 20px;
+        }
     </style>
 </head>
 <body>
-    <h1>🎹 Escuela de Piano</h1>
-    <p>Sistema de reserva de turnos</p>
-    
-    <button class="login-btn" onclick="login()">Iniciar Sesión con Google</button>
-    
-    <div id="userInfo" style="display:none; margin-top:30px;">
-        <h3>✅ Sesión Iniciada</h3>
-        <p id="userEmail"></p>
+    <div class="container">
+        <div class="piano-icon">🎹</div>
+        <h1>Escuela de Piano</h1>
+        <p>Sistema de reserva de turnos</p>
+        
+        <!-- Sección de Autenticación -->
+        <div id="auth-section">
+            <p>Inicia sesión para gestionar tus horarios de práctica</p>
+            <button class="login-btn" onclick="login()">
+                Iniciar Sesión con Google
+            </button>
+            <div id="auth-error" class="hidden error-message"></div>
+        </div>
+        
+        <!-- Sección de Aplicación (oculta inicialmente) -->
+        <div id="app-section" class="hidden">
+            <div id="user-info" class="user-info">
+                <h3>¡Bienvenido!</h3>
+                <p id="user-email"></p>
+                <p id="user-name"></p>
+            </div>
+            
+            <h2>📅 Tu Calendario de Reservas</h2>
+            <div class="calendar-placeholder" id="calendar">
+                <p>Calendario interactivo</p>
+                <p>Aquí podrás ver y gestionar tus horarios de práctica</p>
+            </div>
+            
+            <button class="logout-btn" onclick="logout()">Cerrar Sesión</button>
+        </div>
+        
+        <div style="margin-top: 40px; color: #666; font-size: 14px;">
+            <p>Usando Supabase + Google OAuth + Netlify</p>
+        </div>
     </div>
 
+    <!-- Supabase SDK -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
     <script>
-        const supabase = window.supabase.createClient(
-            'https://yhwtlbcckdegbggjaems.supabase.co',
-            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inlod3RsYmNja2RlZ2JnZ2phZW1zIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjU5NDQyODIsImV4cCI6MjA4MTUyMDI4Mn0.ab35WTtpZGJ4VP-3Dkr0SdQN5hK5ZC5uxeVLJiarWs8'
-        );
+        // Configuración de Supabase
+        const SUPABASE_URL = 'https://yhwtlbcckdegbggjaems.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inlod3RsYmNja2RlZ2JnZ2phZW1zIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjU5NDQyODIsImV4cCI6MjA4MTUyMDI4Mn0.ab35WTtpZGJ4VP-3Dkr0SdQN5hK5ZC5uxeVLJiarWs8';
         
-        function login() {
-            // Usar GitHub Pages como proxy
-            window.location.href = 
-                'https://yhwtlbcckdegbggjaems.supabase.co/auth/v1/authorize?provider=google&redirect_to=' + 
-                encodeURIComponent('https://quadvdm.github.io/piano-calendario/oauth-proxy.html');
+        // Inicializar cliente Supabase
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        
+        // Manejar autenticación al cargar la página
+        async function initAuth() {
+            console.log('Inicializando autenticación...');
+            
+            // Verificar si hay tokens en el hash de la URL
+            const hash = window.location.hash.substring(1);
+            const params = new URLSearchParams(hash);
+            
+            const accessToken = params.get('access_token');
+            const refreshToken = params.get('refresh_token');
+            const error = params.get('error');
+            
+            console.log('Parámetros en URL:', { accessToken: !!accessToken, hasError: !!error });
+            
+            // CASO 1: Tenemos error
+            if (error) {
+                showError(`Error de autenticación: ${error}`);
+                return;
+            }
+            
+            // CASO 2: Tenemos token de acceso
+            if (accessToken) {
+                console.log('Token recibido, estableciendo sesión...');
+                
+                try {
+                    // Limpiar hash de la URL
+                    window.history.replaceState({}, document.title, window.location.pathname + window.location.search);
+                    
+                    // Establecer sesión con los tokens
+                    const { data, error: sessionError } = await supabase.auth.setSession({
+                        access_token: accessToken,
+                        refresh_token: refreshToken || ''
+                    });
+                    
+                    if (sessionError) throw sessionError;
+                    
+                    // Mostrar aplicación
+                    await showApp();
+                    
+                } catch (error) {
+                    console.error('Error al establecer sesión:', error);
+                    showError('Error al iniciar sesión: ' + error.message);
+                }
+                
+                return;
+            }
+            
+            // CASO 3: Verificar si ya hay sesión activa
+            const { data: { session }, error: sessionCheckError } = await supabase.auth.getSession();
+            
+            if (sessionCheckError) {
+                console.error('Error al verificar sesión:', sessionCheckError);
+            }
+            
+            if (session) {
+                console.log('Sesión ya activa');
+                await showApp();
+            } else {
+                console.log('No hay sesión activa');
+                showAuth();
+            }
         }
         
-        // Verificar si ya está logueado
-        supabase.auth.getSession().then(({ data: { session } }) => {
-            if (session) {
-                document.getElementById('userEmail').textContent = session.user.email;
-                document.getElementById('userInfo').style.display = 'block';
-                document.querySelector('.login-btn').style.display = 'none';
+        // Iniciar sesión con Google
+        function login() {
+            console.log('Iniciando login...');
+            
+            // Limpiar caché local
+            localStorage.clear();
+            sessionStorage.clear();
+            
+            // Usar GitHub Pages como proxy OAuth
+            const proxyUrl = 'https://quadvdm.github.io/piano-calendario/oauth-proxy.html';
+            console.log('Redirigiendo a proxy:', proxyUrl);
+            
+            window.location.href = proxyUrl;
+        }
+        
+        // Cerrar sesión
+        async function logout() {
+            try {
+                await supabase.auth.signOut();
+                showAuth();
+                console.log('Sesión cerrada');
+            } catch (error) {
+                console.error('Error al cerrar sesión:', error);
             }
-        });
+        }
+        
+        // Mostrar sección de autenticación
+        function showAuth() {
+            document.getElementById('auth-section').classList.remove('hidden');
+            document.getElementById('app-section').classList.add('hidden');
+            document.getElementById('auth-error').classList.add('hidden');
+        }
+        
+        // Mostrar aplicación principal
+        async function showApp() {
+            try {
+                const { data: { user }, error } = await supabase.auth.getUser();
+                
+                if (error) throw error;
+                
+                if (user) {
+                    // Mostrar información del usuario
+                    document.getElementById('user-email').textContent = `📧 ${user.email}`;
+                    document.getElementById('user-name').textContent = `👤 ${user.user_metadata?.full_name || 'Usuario'}`;
+                    
+                    // Mostrar secciones
+                    document.getElementById('auth-section').classList.add('hidden');
+                    document.getElementById('app-section').classList.remove('hidden');
+                    document.getElementById('auth-error').classList.add('hidden');
+                    
+                    console.log('Usuario autenticado:', user.email);
+                    
+                    // Aquí puedes cargar el calendario real
+                    loadCalendar(user.id);
+                } else {
+                    showAuth();
+                }
+            } catch (error) {
+                console.error('Error al obtener usuario:', error);
+                showError('Error al cargar información del usuario');
+            }
+        }
+        
+        // Mostrar error
+        function showError(message) {
+            const errorElement = document.getElementById('auth-error');
+            errorElement.textContent = message;
+            errorElement.classList.remove('hidden');
+            showAuth();
+        }
+        
+        // Cargar calendario (placeholder por ahora)
+        async function loadCalendar(userId) {
+            console.log('Cargando calendario para usuario:', userId);
+            
+            // Aquí implementarás la lógica real del calendario
+            const calendarElement = document.getElementById('calendar');
+            calendarElement.innerHTML = `
+                <h3>📅 Calendario de ${userId}</h3>
+                <p>Próximas características:</p>
+                <ul style="text-align: left; display: inline-block;">
+                    <li>Ver horarios reservados</li>
+                    <li>Cambiar a horarios disponibles</li>
+                    <li>Notificaciones de recordatorio</li>
+                    <li>Historial de prácticas</li>
+                </ul>
+                <p style="margin-top: 20px; color: #4285f4; font-weight: bold;">
+                    🎯 Funcionalidad en desarrollo
+                </p>
+            `;
+        }
+        
+        // Inicializar cuando se carga la página
+        document.addEventListener('DOMContentLoaded', initAuth);
+        
+        // También manejar cambios en el hash (para cuando regresa de OAuth)
+        window.addEventListener('hashchange', initAuth);
     </script>
 </body>
 </html>
