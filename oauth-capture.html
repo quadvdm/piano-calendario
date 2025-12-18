@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>🎹 Captura de Token OAuth</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script>
+        // ESTE ARCHIVO VA EN: https://quadvdm.github.io/piano-calendario/oauth-capture.html
+        
+        // Extraer token del hash de la URL
+        function extractTokenFromHash() {
+            const hash = window.location.hash.substring(1);
+            if (!hash) return null;
+            
+            const params = new URLSearchParams(hash);
+            const accessToken = params.get('access_token');
+            const refreshToken = params.get('refresh_token');
+            
+            return { accessToken, refreshToken };
+        }
+        
+        // Cuando carga la página
+        window.addEventListener('load', function() {
+            console.log('🔧 Capturador OAuth activo en GitHub Pages');
+            
+            // Verificar si estamos recibiendo un token
+            const tokens = extractTokenFromHash();
+            
+            if (tokens.accessToken) {
+                console.log('✅ Token recibido:', tokens.accessToken.substring(0, 30) + '...');
+                
+                // Redirigir a Netlify CON los tokens
+                const netlifyUrl = new URL('https://lovely-lamington-133500.netlify.app');
+                
+                // Pasar tokens como parámetros de consulta (más confiable que hash)
+                netlifyUrl.searchParams.set('access_token', tokens.accessToken);
+                if (tokens.refreshToken) {
+                    netlifyUrl.searchParams.set('refresh_token', tokens.refreshToken);
+                }
+                netlifyUrl.searchParams.set('oauth_source', 'github_pages');
+                netlifyUrl.searchParams.set('timestamp', Date.now());
+                
+                console.log('🔄 Redirigiendo a Netlify...');
+                window.location.href = netlifyUrl.toString();
+                
+            } else {
+                // Si no hay token, iniciar el flujo OAuth
+                console.log('🔄 Iniciando flujo OAuth...');
+                
+                // URL de autorización que redirige a ESTE MISMO archivo
+                const authUrl = new URL('https://yhwtlbcckdegbggjaems.supabase.co/auth/v1/authorize');
+                authUrl.searchParams.set('provider', 'google');
+                authUrl.searchParams.set('redirect_to', 'https://quadvdm.github.io/piano-calendario/oauth-capture.html');
+                authUrl.searchParams.set('prompt', 'consent');
+                authUrl.searchParams.set('access_type', 'offline');
+                authUrl.searchParams.set('response_type', 'token');
+                
+                // Redirigir a Google
+                window.location.href = authUrl.toString();
+            }
+        });
+    </script>
+</head>
+<body style="font-family: Arial; text-align: center; padding: 50px;">
+    <h2>🔄 Procesando autenticación...</h2>
+    <p>Por favor espera mientras conectamos con Google.</p>
+    <div style="margin-top: 30px;">
+        <div id="status">Inicializando...</div>
+    </div>
+</body>
+</html>
