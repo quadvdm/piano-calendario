@@ -1,67 +1,187 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>OAuth Proxy</title>
+    <title>OAuth Proxy - Escuela de Piano</title>
     <meta charset="UTF-8">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            padding: 50px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+        .container {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 40px;
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+            max-width: 500px;
+            width: 90%;
+        }
+        .spinner {
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top: 4px solid white;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
 </head>
 <body>
-    <h2>🔄 Procesando autenticación...</h2>
-    <p id="status">Extrayendo token de Google...</p>
+    <div class="container">
+        <h1>🎹 Escuela de Piano</h1>
+        <div id="status">
+            <p>🔄 Procesando autenticación...</p>
+            <div class="spinner"></div>
+        </div>
+        <div id="error" style="display: none; color: #ff6b6b; margin-top: 20px;"></div>
+    </div>
     
     <script>
-        // Función para extraer parámetros del hash
-        function getHashParams() {
-            const hash = window.location.hash.substring(1);
+        // Función para extraer parámetros de URL
+        function getUrlParams() {
             const params = {};
             
-            if (!hash) {
-                document.getElementById('status').innerHTML = 
-                    '❌ No se recibió token de Google.';
-                return params;
+            // Primero verificar el hash (Supabase envía tokens aquí)
+            if (window.location.hash) {
+                const hashParams = new URLSearchParams(window.location.hash.substring(1));
+                for (const [key, value] of hashParams.entries()) {
+                    params[key] = value;
+                }
             }
             
-            hash.split('&').forEach(param => {
-                const [key, value] = param.split('=');
-                params[key] = decodeURIComponent(value);
-            });
+            // Luego verificar query string (Google envía errores aquí)
+            if (window.location.search) {
+                const searchParams = new URLSearchParams(window.location.search);
+                for (const [key, value] of searchParams.entries()) {
+                    params[key] = value;
+                }
+            }
             
             return params;
         }
         
-        // Procesar al cargar la página
-        window.addEventListener('DOMContentLoaded', function() {
-            const params = getHashParams();
+        // Función para redirigir a Netlify con los tokens
+        function redirectToNetlify(tokens) {
+            console.log('Redirigiendo a Netlify con tokens:', tokens);
             
-            if (params.access_token) {
-                document.getElementById('status').innerHTML = 
-                    '✅ Token recibido de Google.<br>Redirigiendo a Supabase...';
-                
-                console.log('Token recibido, redirigiendo a Supabase...');
-                
-                // Redirigir a Supabase CON el token
-                const supabaseCallback = 'https://yhwtlbcckdegbggjaems.supabase.co/auth/v1/callback';
-                window.location.href = `${supabaseCallback}#${window.location.hash.substring(1)}`;
-                
-            } else if (window.location.search.includes('error')) {
-                // Error de Google
-                const urlParams = new URLSearchParams(window.location.search);
-                const error = urlParams.get('error');
-                
-                document.getElementById('status').innerHTML = 
-                    `❌ Error de Google: ${error}`;
-                    
-            } else {
-                // Si no hay token, iniciar el flujo OAuth
-                document.getElementById('status').innerHTML = 
-                    'Iniciando autenticación con Google...';
-                
-                const authUrl = `https://yhwtlbcckdegbggjaems.supabase.co/auth/v1/authorize?provider=google&redirect_to=${encodeURIComponent('https://quadvdm.github.io/piano-calendario/oauth-proxy.html')}`;
-                
-                setTimeout(() => {
-                    window.location.href = authUrl;
-                }, 1000);
+            // Construir URL para Netlify
+            const netlifyUrl = new URL('https://lovely-lamington-133500.netlify.app');
+            
+            // Agregar tokens como fragmento (hash)
+            let hash = '';
+            if (tokens.access_token) {
+                hash += `access_token=${encodeURIComponent(tokens.access_token)}`;
             }
-        });
+            if (tokens.refresh_token) {
+                hash += `&refresh_token=${encodeURIComponent(tokens.refresh_token)}`;
+            }
+            if (tokens.expires_in) {
+                hash += `&expires_in=${tokens.expires_in}`;
+            }
+            if (tokens.token_type) {
+                hash += `&token_type=${tokens.token_type}`;
+            }
+            
+            netlifyUrl.hash = hash;
+            
+            // Agregar parámetro de estado para evitar caché
+            netlifyUrl.searchParams.set('oauth_complete', Date.now());
+            
+            console.log('URL final:', netlifyUrl.toString());
+            
+            // Redirigir a Netlify
+            window.location.href = netlifyUrl.toString();
+        }
+        
+        // Función para iniciar el flujo OAuth
+        function startOAuthFlow() {
+            console.log('Iniciando flujo OAuth...');
+            
+            // URL de autorización de Supabase con parámetros específicos
+            const authUrl = new URL('https://yhwtlbcckdegbggjaems.supabase.co/auth/v1/authorize');
+            
+            // Parámetros necesarios
+            authUrl.searchParams.set('provider', 'google');
+            authUrl.searchParams.set('redirect_to', 'https://quadvdm.github.io/piano-calendario/oauth-proxy.html');
+            authUrl.searchParams.set('prompt', 'select_account'); // Forzar nueva autenticación
+            authUrl.searchParams.set('access_type', 'offline');
+            authUrl.searchParams.set('response_type', 'token');
+            
+            console.log('Redirigiendo a:', authUrl.toString());
+            
+            // Redirigir a Supabase/Google
+            window.location.href = authUrl.toString();
+        }
+        
+        // Función principal
+        async function processOAuth() {
+            const params = getUrlParams();
+            console.log('Parámetros recibidos:', params);
+            
+            // CASO 1: Tenemos tokens de Supabase
+            if (params.access_token && params.token_type === 'bearer') {
+                document.getElementById('status').innerHTML = 
+                    '<p>✅ Autenticación exitosa</p><p>Redirigiendo a la aplicación...</p>';
+                
+                // Esperar un momento para mostrar el mensaje
+                setTimeout(() => {
+                    redirectToNetlify(params);
+                }, 1500);
+                
+                return;
+            }
+            
+            // CASO 2: Tenemos error de Google
+            if (params.error) {
+                document.getElementById('status').style.display = 'none';
+                document.getElementById('error').style.display = 'block';
+                document.getElementById('error').innerHTML = 
+                    `<p>❌ Error de autenticación</p>
+                     <p>${params.error_description || params.error}</p>
+                     <button onclick="window.location.href='https://lovely-lamington-133500.netlify.app'">
+                         Volver a la aplicación
+                     </button>`;
+                return;
+            }
+            
+            // CASO 3: Tenemos código de autorización (flujo implícito)
+            if (params.code) {
+                document.getElementById('status').innerHTML = 
+                    '<p>🔄 Intercambiando código por token...</p>';
+                
+                // Redirigir a Supabase para intercambiar código por token
+                const supabaseCallback = `https://yhwtlbcckdegbggjaems.supabase.co/auth/v1/callback?code=${encodeURIComponent(params.code)}`;
+                window.location.href = supabaseCallback;
+                return;
+            }
+            
+            // CASO 4: No hay parámetros, iniciar flujo
+            document.getElementById('status').innerHTML = 
+                '<p>🔗 Conectando con Google...</p>';
+            
+            setTimeout(() => {
+                startOAuthFlow();
+            }, 1000);
+        }
+        
+        // Iniciar procesamiento cuando se carga la página
+        document.addEventListener('DOMContentLoaded', processOAuth);
+        
+        // También manejar carga dinámica
+        window.addEventListener('load', processOAuth);
     </script>
 </body>
 </html>
