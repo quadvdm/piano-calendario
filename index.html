@@ -3,115 +3,38 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🎹 Escuela de Piano - Sistema de Reservas</title>
+    <title>🎹 Escuela de Piano</title>
     <style>
-        body { 
-            font-family: Arial, sans-serif; 
-            text-align: center; 
-            padding: 50px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-        }
-        .container {
-            background: rgba(255, 255, 255, 0.1);
-            padding: 40px;
-            border-radius: 20px;
-            backdrop-filter: blur(10px);
-            max-width: 600px;
-            width: 90%;
-        }
+        body { font-family: Arial; text-align: center; padding: 50px; }
         .login-btn {
-            background: white;
-            color: #4285f4;
+            background: #4285f4;
+            color: white;
             border: none;
             padding: 15px 30px;
             font-size: 16px;
             border-radius: 8px;
             cursor: pointer;
             margin: 20px;
-            font-weight: bold;
-            transition: transform 0.3s;
         }
-        .login-btn:hover { 
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-        }
-        .instructions {
-            background: rgba(255,255,255,0.1);
-            padding: 20px;
-            border-radius: 10px;
-            margin: 20px 0;
-            text-align: left;
-        }
-        .step {
-            margin: 10px 0;
-            padding-left: 20px;
-            position: relative;
-        }
-        .step:before {
-            content: "✓";
-            position: absolute;
-            left: 0;
-            color: #4CAF50;
-        }
+        .login-btn:hover { background: #3367d6; }
     </style>
 </head>
 <body>
-    <div class="container" id="main-container">
-        <h1>🎹 Escuela de Piano</h1>
-        <p>Sistema de reserva de turnos</p>
-        
-        <!-- Botón de login MEJORADO -->
-        <button class="login-btn" onclick="startGoogleLogin()">
-            Iniciar Sesión con Google
-        </button>
-        
-        <!-- Instrucciones -->
-        <div class="instructions">
-            <h3>📋 Instrucciones:</h3>
-            <div class="step">Haz clic en el botón arriba</div>
-            <div class="step">Inicia sesión con tu cuenta de Google</div>
-            <div class="step">Si te redirige a localhost:3000, COPIA la URL completa</div>
-            <div class="step">Pégala aquí abajo y haz clic en "Procesar Token"</div>
-        </div>
-        
-        <!-- Para pegar URLs de localhost:3000 -->
-        <div id="token-processor" style="margin-top: 30px; display: none;">
-            <h3>🔄 Procesar Token Manualmente</h3>
-            <textarea id="token-url" placeholder="Pega aquí la URL de localhost:3000..." 
-                      style="width: 100%; height: 100px; padding: 10px; border-radius: 5px; margin: 10px 0;"></textarea>
-            <button class="login-btn" onclick="processManualToken()" style="background: #4CAF50; color: white;">
-                Procesar Token
-            </button>
-        </div>
-        
-        <!-- Información del usuario -->
-        <div id="user-info" style="display:none; margin-top:30px;">
-            <h3>✅ Sesión Iniciada</h3>
-            <p id="user-email"></p>
-            <button class="login-btn" onclick="logout()" style="background: #f44336; color: white;">
-                Cerrar Sesión
-            </button>
-        </div>
-        
-        <!-- Enlace de emergencia -->
-        <div style="margin-top: 40px; font-size: 12px; opacity: 0.8;">
-            <p>Problemas? Usa: 
-                <a href="#" onclick="useEmergencyLink()" style="color: #ffcc00; text-decoration: underline;">
-                    Enlace de Emergencia
-                </a>
-            </p>
-        </div>
+    <h1>🎹 Escuela de Piano</h1>
+    <p>Sistema de reserva de turnos</p>
+    
+    <!-- Botón ÚNICO y SIMPLE -->
+    <button class="login-btn" onclick="loginWithGitHubPages()">
+        Iniciar Sesión con Google
+    </button>
+    
+    <div id="userInfo" style="display:none; margin-top:30px;">
+        <h3>✅ Sesión Iniciada</h3>
+        <p id="userEmail"></p>
+        <button onclick="logout()">Cerrar Sesión</button>
     </div>
 
-    <!-- Supabase SDK -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    
     <script>
         // Configuración Supabase
         const supabase = window.supabase.createClient(
@@ -119,177 +42,75 @@
             'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inlod3RsYmNja2RlZ2JnZ2phZW1zIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjU5NDQyODIsImV4cCI6MjA4MTUyMDI4Mn0.ab35WTtpZGJ4VP-3Dkr0SdQN5hK5ZC5uxeVLJiarWs8'
         );
         
-        // ====== FUNCIÓN PRINCIPAL DE LOGIN ======
-        function startGoogleLogin() {
-            console.log('🚀 Iniciando login con Google...');
-            
-            // Mostrar instrucciones para token manual
-            document.getElementById('token-processor').style.display = 'block';
-            
-            // URL de login con parámetros que evitan localhost
-            const authUrl = `https://yhwtlbcckdegbggjaems.supabase.co/auth/v1/authorize?provider=google&redirect_to=${encodeURIComponent('https://lovely-lamington-133500.netlify.app')}&prompt=consent&access_type=offline&state=${Date.now()}`;
-            
-            // Abrir en nueva ventana para mejor control
-            const loginWindow = window.open(authUrl, 'GoogleLogin', 'width=500,height=600');
-            
-            if (!loginWindow) {
-                alert('⚠️ Por favor permite ventanas emergentes para este sitio');
-                // Fallback: abrir en misma ventana
-                window.location.href = authUrl;
-            }
+        // ====== FUNCIÓN PRINCIPAL SIMPLE ======
+        function loginWithGitHubPages() {
+            // Redirigir directamente al capturador en GitHub Pages
+            window.location.href = 'https://quadvdm.github.io/piano-calendario/oauth-capture.html';
         }
         
-        // ====== PROCESAR TOKEN MANUALMENTE ======
-        function processManualToken() {
-            const tokenUrl = document.getElementById('token-url').value.trim();
+        // ====== VERIFICAR SI HAY TOKEN EN LA URL ======
+        async function checkForTokenInUrl() {
+            // Verificar parámetros de consulta (vienen de GitHub Pages)
+            const urlParams = new URLSearchParams(window.location.search);
+            const accessToken = urlParams.get('access_token');
+            const refreshToken = urlParams.get('refresh_token');
             
-            if (!tokenUrl) {
-                alert('Por favor pega la URL de localhost:3000');
-                return;
-            }
-            
-            console.log('🔍 Procesando URL manual:', tokenUrl);
-            
-            // Extraer hash de la URL
-            let hash = '';
-            
-            if (tokenUrl.includes('localhost:3000/#')) {
-                // Extraer todo después del #
-                const hashIndex = tokenUrl.indexOf('#');
-                if (hashIndex !== -1) {
-                    hash = tokenUrl.substring(hashIndex + 1);
-                }
-            } else if (tokenUrl.includes('access_token=')) {
-                // Si ya es solo el hash
-                hash = tokenUrl;
-            }
-            
-            if (!hash) {
-                alert('No se pudo extraer el token de la URL. Asegúrate de copiar toda la URL de localhost:3000');
-                return;
-            }
-            
-            console.log('✅ Hash extraído:', hash.substring(0, 50) + '...');
-            
-            // Procesar el token
-            processTokenHash(hash);
-        }
-        
-        // ====== PROCESAR HASH DEL TOKEN ======
-        async function processTokenHash(hash) {
-            try {
-                const params = new URLSearchParams(hash);
-                const accessToken = params.get('access_token');
-                const refreshToken = params.get('refresh_token');
+            if (accessToken) {
+                console.log('🔑 Token recibido desde GitHub Pages');
                 
-                if (!accessToken) {
-                    throw new Error('No se encontró access_token en la URL');
-                }
-                
-                console.log('🔑 Token encontrado, estableciendo sesión...');
-                
-                // Establecer sesión en Supabase
-                const { data, error } = await supabase.auth.setSession({
-                    access_token: accessToken,
-                    refresh_token: refreshToken || ''
-                });
-                
-                if (error) throw error;
-                
-                console.log('✅ Sesión establecida para:', data.user?.email);
-                
-                // Mostrar información del usuario
-                showUserInfo(data.user);
-                
-                // Ocultar procesador manual
-                document.getElementById('token-processor').style.display = 'none';
-                document.getElementById('token-url').value = '';
-                
-                alert('✅ ¡Sesión iniciada correctamente!');
-                
-            } catch (error) {
-                console.error('❌ Error procesando token:', error);
-                alert('Error al procesar el token: ' + error.message);
-            }
-        }
-        
-        // ====== ENLACE DE EMERGENCIA ======
-        function useEmergencyLink() {
-            // Enlace que abre una página intermedia
-            const emergencyUrl = 'https://lovely-lamington-133500.netlify.app/emergency-login.html';
-            window.open(emergencyUrl, '_blank');
-        }
-        
-        // ====== VERIFICAR SESIÓN EXISTENTE ======
-        async function checkExistingSession() {
-            try {
-                const { data: { session }, error } = await supabase.auth.getSession();
-                
-                if (error) {
-                    console.error('Error verificando sesión:', error);
-                    return;
-                }
-                
-                if (session) {
-                    console.log('✅ Sesión existente encontrada');
-                    showUserInfo(session.user);
-                }
-                
-                // Verificar si hay tokens en la URL actual (por si acaso)
-                if (window.location.hash) {
-                    console.log('⚠️ Hash encontrado en URL, procesando...');
-                    await processTokenHash(window.location.hash.substring(1));
+                try {
+                    // Establecer sesión
+                    const { data, error } = await supabase.auth.setSession({
+                        access_token: accessToken,
+                        refresh_token: refreshToken || ''
+                    });
+                    
+                    if (error) throw error;
+                    
+                    console.log('✅ Sesión establecida para:', data.user?.email);
                     
                     // Limpiar URL
                     window.history.replaceState({}, document.title, window.location.pathname);
+                    
+                    // Mostrar usuario
+                    showUserInfo(data.user);
+                    
+                } catch (error) {
+                    console.error('❌ Error al establecer sesión:', error);
                 }
-                
-            } catch (error) {
-                console.error('Error inicial:', error);
             }
         }
         
         // ====== MOSTRAR INFO DEL USUARIO ======
         function showUserInfo(user) {
             if (user) {
-                document.getElementById('user-email').textContent = user.email;
-                document.getElementById('user-info').style.display = 'block';
+                document.getElementById('userEmail').textContent = user.email;
+                document.getElementById('userInfo').style.display = 'block';
                 document.querySelector('.login-btn').style.display = 'none';
-                document.getElementById('token-processor').style.display = 'none';
             }
         }
         
         // ====== CERRAR SESIÓN ======
         async function logout() {
-            try {
-                await supabase.auth.signOut();
-                document.getElementById('user-info').style.display = 'none';
-                document.querySelector('.login-btn').style.display = 'inline-block';
-                console.log('✅ Sesión cerrada');
-            } catch (error) {
-                console.error('Error cerrando sesión:', error);
+            await supabase.auth.signOut();
+            document.getElementById('userInfo').style.display = 'none';
+            document.querySelector('.login-btn').style.display = 'inline-block';
+        }
+        
+        // ====== VERIFICAR SESIÓN EXISTENTE ======
+        async function checkExistingSession() {
+            const { data: { session } } = await supabase.auth.getSession();
+            
+            if (session) {
+                showUserInfo(session.user);
+            } else {
+                // Verificar si hay token en la URL
+                await checkForTokenInUrl();
             }
         }
         
         // ====== INICIALIZAR ======
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log('🎹 Aplicación de Piano cargada');
-            checkExistingSession();
-        });
-    </script>
-    
-    <!-- Script auxiliar para capturar mensajes de otras ventanas -->
-    <script>
-        // Escuchar mensajes de ventanas emergentes (si usamos esa estrategia)
-        window.addEventListener('message', function(event) {
-            // Asegurarse que el mensaje viene de un origen confiable
-            if (event.origin === 'https://lovely-lamington-133500.netlify.app') {
-                if (event.data.type === 'oauth_token') {
-                    console.log('📨 Token recibido por postMessage:', event.data.token);
-                    processTokenHash(event.data.token);
-                }
-            }
-        });
+        document.addEventListener('DOMContentLoaded', checkExistingSession);
     </script>
 </body>
 </html>
