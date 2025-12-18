@@ -1,30 +1,56 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Test Supabase Directo</title>
+    <title>Test Supabase Directo - CORREGIDO</title>
 </head>
 <body>
-    <h1>Test Supabase sin onclick</h1>
+    <h1>Test Supabase sin onclick - VERSIÓN CORREGIDA</h1>
     <button id="loginBtn">Login Google</button>
     
+    <div id="result" style="margin-top: 20px; padding: 10px; background: #f0f0f0;"></div>
+    
+    <!-- Cargar Supabase -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
     <script>
-        console.log('=== INICIANDO TEST SUPA BASE ===');
+        console.log('=== INICIANDO TEST SUPA BASE CORREGIDO ===');
         
-        // 1. Crear cliente
-        const supabase = window.supabase.createClient(
-            'https://yhwtlbcckdegbggjaems.supabase.co',
-            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inlod3RsYmNja2RlZ2JnZ2phZW1zIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjU5NDQyODIsImV4cCI6MjA4MTUyMDI4Mn0.ab35WTtpZGJ4VP-3Dkr0SdQN5hK5ZC5uxeVLJiarWs8'
-        );
+        // SOLUCIÓN: Verificar si 'supabase' ya existe antes de declararlo
+        if (typeof supabase !== 'undefined') {
+            console.warn('⚠️ "supabase" ya está definido. Usando variable existente.');
+            // Si ya existe, no la redeclares
+        }
         
-        console.log('Cliente Supabase creado:', supabase ? '✅' : '❌');
+        // Crear cliente - SIN 'const' si ya existe
+        let supabaseClient; // Usar nombre diferente para evitar conflicto
         
-        // 2. Event listener directo
+        try {
+            supabaseClient = window.supabase.createClient(
+                'https://yhwtlbcckdegbggjaems.supabase.co',
+                'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inlod3RsYmNja2RlZ2JnZ2phZW1zIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjU5NDQyODIsImV4cCI6MjA4MTUyMDI4Mn0.ab35WTtpZGJ4VP-3Dkr0SdQN5hK5ZC5uxeVLJiarWs8'
+            );
+            
+            console.log('✅ Cliente Supabase creado:', supabaseClient ? 'SÍ' : 'NO');
+            document.getElementById('result').innerHTML = '✅ Cliente Supabase inicializado';
+            
+        } catch (error) {
+            console.error('❌ Error creando cliente:', error);
+            document.getElementById('result').innerHTML = '❌ Error: ' + error.message;
+        }
+        
+        // Event listener directo - USAR supabaseClient (no supabase)
         document.getElementById('loginBtn').addEventListener('click', async function() {
             console.log('🔵 Botón clickeado - iniciando login');
+            document.getElementById('result').innerHTML = '🔄 Conectando con Google...';
+            
+            // Verificar que el cliente existe
+            if (!supabaseClient) {
+                document.getElementById('result').innerHTML = '❌ Error: Cliente Supabase no inicializado';
+                return;
+            }
             
             try {
-                const { error } = await supabase.auth.signInWithOAuth({
+                const { error } = await supabaseClient.auth.signInWithOAuth({
                     provider: 'google',
                     options: {
                         redirectTo: 'https://lovely-lamington-133500.netlify.app'
@@ -33,14 +59,21 @@
                 
                 if (error) {
                     console.error('❌ Error OAuth:', error);
-                    alert('Error: ' + error.message);
+                    document.getElementById('result').innerHTML = '❌ Error: ' + error.message;
+                    
+                    // Ayuda específica
+                    if (error.message.includes('redirect_uri')) {
+                        document.getElementById('result').innerHTML += 
+                            '<br><br>⚠️ Configura Google Cloud con:<br>' +
+                            '<code>https://yhwtlbcckdegbggjaems.supabase.co/auth/v1/callback</code>';
+                    }
                 } else {
                     console.log('✅ Redirección iniciada');
-                    alert('Redirigiendo a Google...');
+                    document.getElementById('result').innerHTML = '✅ Redirigiendo a Google...';
                 }
             } catch (err) {
                 console.error('❌ Error inesperado:', err);
-                alert('Error inesperado: ' + err.message);
+                document.getElementById('result').innerHTML = '❌ Error inesperado: ' + err.message;
             }
         });
         
