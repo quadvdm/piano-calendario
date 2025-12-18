@@ -3,126 +3,55 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Escuela de Piano - Prueba Login</title>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <title>🎹 Escuela de Piano</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            text-align: center;
-            padding-top: 50px;
-        }
-        button {
-            background-color: #4285f4;
+        body { font-family: Arial; text-align: center; padding: 50px; }
+        .login-btn {
+            background: #4285f4;
             color: white;
             border: none;
             padding: 15px 30px;
             font-size: 16px;
-            border-radius: 5px;
+            border-radius: 8px;
             cursor: pointer;
             margin: 20px;
         }
-        #status {
-            margin: 20px auto;
-            padding: 15px;
-            max-width: 500px;
-            border-radius: 5px;
-            background-color: #f0f8ff;
-        }
-        .error {
-            background-color: #f8d7da;
-            color: #721c24;
-        }
+        .login-btn:hover { background: #3367d6; }
     </style>
 </head>
 <body>
-
-    <h1>🎹 Escuela de Piano - Prueba de Login</h1>
-    <p>URL de la prueba: <strong id="currentUrl"></strong></p>
-    <p>Site URL configurada en Supabase: <strong id="siteUrlTarget"></strong></p>
-
-    <div id="status">Haz clic en el botón para iniciar.</div>
-
-    <button onclick="loginWithGoogle()">Iniciar Sesión con Google</button>
-    <div id="userInfo" style="display:none; margin-top: 20px;">
-        <h3>✅ ¡Sesión Iniciada!</h3>
-        <p id="userName"></p>
-        <button onclick="logout()">Cerrar Sesión</button>
+    <h1>🎹 Escuela de Piano</h1>
+    <p>Sistema de reserva de turnos</p>
+    
+    <button class="login-btn" onclick="login()">Iniciar Sesión con Google</button>
+    
+    <div id="userInfo" style="display:none; margin-top:30px;">
+        <h3>✅ Sesión Iniciada</h3>
+        <p id="userEmail"></p>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
-        // 1. CONFIGURACIÓN - Reemplaza con tus valores si es necesario
-        const SUPABASE_URL = 'https://yhwtlbcckdegbggjaems.supabase.co';
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inlod3RsYmNja2RlZ2JnZ2phZW1zIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjU5NDQyODIsImV4cCI6MjA4MTUyMDI4Mn0.ab35WTtpZGJ4VP-3Dkr0SdQN5hK5ZC5uxeVLJiarWs8';
-        // Esta es la URL a la que Supabase te redirigirá. Debe coincidir con la "Site URL" en el Dashboard de Supabase.
-        const SITE_REDIRECT_URL = 'https://lovely-lamington-133500.netlify.app';
-
-        // Mostrar URLs en pantalla para referencia
-        document.getElementById('currentUrl').textContent = window.location.href;
-        document.getElementById('siteUrlTarget').textContent = SITE_REDIRECT_URL;
-
-        // 2. Inicializar cliente Supabase
-        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-        console.log("Cliente Supabase inicializado para:", SUPABASE_URL);
-
-        // 3. Función principal de Login
-        async function loginWithGoogle() {
-            console.log("Función loginWithGoogle() ejecutada.");
-            document.getElementById('status').innerHTML = "🔗 Conectando con Google...";
-
-            try {
-                const { data, error } = await supabase.auth.signInWithOAuth({
-                    provider: 'google',
-                    options: {
-                        // El parámetro 'redirectTo' es clave. Indica a dónde irá el usuario tras la autenticación.
-                        redirectTo: SITE_REDIRECT_URL
-                    }
-                });
-
-                if (error) {
-                    console.error("Error de Supabase al iniciar OAuth:", error);
-                    document.getElementById('status').innerHTML = `<span class="error">❌ Error: ${error.message}</span>`;
-                    // Si el error es de redirección, te dará una pista clara.
-                    if (error.message.includes('redirect')) {
-                        document.getElementById('status').innerHTML += `<p><small>Asegúrate de que <strong>${SITE_REDIRECT_URL}</strong> esté en "Site URL" y "Redirect URLs" en el Dashboard de Supabase.</small></p>`;
-                    }
-                } else {
-                    console.log("Redirección iniciada hacia:", data?.url || 'Google');
-                    document.getElementById('status').innerHTML = "✅ Redirigiendo a Google...";
-                    // El navegador se redirigirá automáticamente. No necesitas hacer nada más aquí.
-                }
-            } catch (err) {
-                console.error("Error inesperado:", err);
-                document.getElementById('status').innerHTML = `<span class="error">⚠️ Error inesperado: ${err.message}</span>`;
+        const supabase = window.supabase.createClient(
+            'https://yhwtlbcckdegbggjaems.supabase.co',
+            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inlod3RsYmNja2RlZ2JnZ2phZW1zIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjU5NDQyODIsImV4cCI6MjA4MTUyMDI4Mn0.ab35WTtpZGJ4VP-3Dkr0SdQN5hK5ZC5uxeVLJiarWs8'
+        );
+        
+        function login() {
+            // Usar GitHub Pages como proxy
+            window.location.href = 
+                'https://yhwtlbcckdegbggjaems.supabase.co/auth/v1/authorize?provider=google&redirect_to=' + 
+                encodeURIComponent('https://quadvdm.github.io/piano-calendario/oauth-proxy.html');
+        }
+        
+        // Verificar si ya está logueado
+        supabase.auth.getSession().then(({ data: { session } }) => {
+            if (session) {
+                document.getElementById('userEmail').textContent = session.user.email;
+                document.getElementById('userInfo').style.display = 'block';
+                document.querySelector('.login-btn').style.display = 'none';
             }
-        }
-
-        // 4. Verificar si el usuario ya tiene una sesión activa (al cargar la página)
-        async function checkUser() {
-            const { data: { session }, error } = await supabase.auth.getSession();
-            if (error) {
-                console.warn("Error al verificar sesión:", error);
-            } else if (session?.user) {
-                showUserInfo(session.user);
-            }
-        }
-
-        function showUserInfo(user) {
-            document.getElementById('userName').textContent = `Hola, ${user.email}`;
-            document.getElementById('userInfo').style.display = 'block';
-            document.getElementById('status').innerHTML = "✅ Ya tienes una sesión activa.";
-        }
-
-        async function logout() {
-            const { error } = await supabase.auth.signOut();
-            if (!error) {
-                document.getElementById('userInfo').style.display = 'none';
-                document.getElementById('status').innerHTML = "Sesión cerrada.";
-            }
-        }
-
-        // 5. Ejecutar la verificación de usuario cuando se carga la página
-        window.addEventListener('DOMContentLoaded', checkUser);
+        });
     </script>
-
 </body>
 </html>
