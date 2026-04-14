@@ -1,0 +1,12 @@
+# Seguridad: Credenciales de Google y Base de Datos
+client_secret_*.json
+*.json
+config/database.php
+
+# Archivos generados y temporales
+admin/backups/*.html
+uploads/avatars/*
+
+# Archivos de sistema
+.DS_Store
+Thumbs.db
