@@ -25,7 +25,7 @@ $diasSemana = [1 => "Lunes", 2 => "Martes", 3 => "Miércoles", 4 => "Jueves", 5 
 $sqlActivas = "SELECT 
             r.id AS reserva_id, r.fecha, r.suscripcion_id, r.usuario_id AS alumno_id,
             h.profesor_id, h.id AS horario_id, h.instrumento, h.modalidad, h.duracion_minutos,
-            h.tipo_turno,
+            h.tipo_turno, r.observaciones,
             r.estado, h.hora, p.nombre AS nombre_profesor, u.nombre AS nombre_alumno,
             CASE WHEN r.suscripcion_id IS NOT NULL THEN 'Fijo' ELSE 'Individual' END as tipo_label
         FROM reservas r
@@ -453,6 +453,14 @@ function openModal(data, currentUserId) {
     const actions = document.getElementById('modalActions');
     const content = document.getElementById('modalContent');
     
+    // Preparar la sección de Descripción / Observaciones
+    const observacionesHtml = data.observaciones 
+        ? `<div style="margin-top:20px; padding:15px; background:rgba(139, 92, 246, 0.1); border-radius:15px; border-left:4px solid #8b5cf6; text-align:left;">
+             <span style="display:block; color:#a78bfa; font-size:0.65rem; font-weight:800; text-transform:uppercase; letter-spacing:1.5px; margin-bottom:8px;">Descripción</span>
+             <p style="margin:0; font-size:0.95rem; line-height:1.5; color:#e5e7eb;">${data.observaciones}</p>
+           </div>` 
+        : '';
+
     content.innerHTML = `
         <div style="text-align:center; margin-bottom: 30px;">
             <div style="font-size: 0.65rem; font-weight: 900; color: var(--accent); text-transform: uppercase; letter-spacing: 2.5px; margin-bottom: 12px;">Turno ${data.tipo_label}</div>
@@ -487,8 +495,11 @@ function openModal(data, currentUserId) {
                 </div>
             </div>
         </div>
+
+        ${observacionesHtml}
     `;
 
+    // Lógica de botones
     actions.innerHTML = '';
     const esProfe = (parseInt(data.profesor_id) === currentUserId);
     const esFijo = (data.suscripcion_id !== null && data.suscripcion_id !== "");
@@ -496,7 +507,6 @@ function openModal(data, currentUserId) {
     if (esProfe) {
         let htmlButtons = `<a href="procesar-editar-clase.php?id=${data.reserva_id}" class="btn-action btn-edit"><i class="fas fa-pen"></i> Editar Turno</a>`;
 
-        // Botón Trasladar con confirmación (Solo Fijos)
         if (esFijo) {
             htmlButtons += `
                 <form method="POST" action="procesar.php" style="width:100%" onsubmit="return confirm('¿Estás seguro de que deseas trasladar esta clase a la próxima semana?')">
@@ -506,7 +516,6 @@ function openModal(data, currentUserId) {
                 </form>`;
         }
 
-        // Botón Cancelar con confirmación
         const msgCancel = esFijo ? '¿Confirmas que deseas cancelar el turno fijo?' : '¿Confirmas que deseas cancelar este turno extra?';
         
         htmlButtons += `
@@ -522,6 +531,7 @@ function openModal(data, currentUserId) {
     }
     modal.style.display = 'flex';
 }
+
 function closeModal(e) { if (e.target.classList.contains('modal-overlay')) document.getElementById('reservaModal').style.display = 'none'; }
 </script>
 

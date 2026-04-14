@@ -36,7 +36,7 @@ if (str_contains($userRol, 'profesor')) {
     $profesorData = $db->fetchAll($sqlIdProf, [$userId]);
     $profesorIdReal = !empty($profesorData) ? (int)$profesorData[0]['id'] : 0;
 
-    $sqlTurnos = "SELECT r.fecha, r.estado, r.es_recurrente,
+    $sqlTurnos = "SELECT r.fecha, r.estado, r.es_recurrente,r.observaciones,
                          h.hora, h.dia_semana, h.duracion_minutos, h.instrumento, h.modalidad,
                          u.nombre as persona_nombre,
                          IF(r.es_recurrente=1, 'Fijo', 'Extra') as tipo
@@ -51,7 +51,7 @@ if (str_contains($userRol, 'profesor')) {
                   
     $proximos = $db->fetchAll($sqlTurnos, [$profesorIdReal]);
 } else {
-    $sqlTurnos = "SELECT r.fecha, r.estado, r.es_recurrente,
+    $sqlTurnos = "SELECT r.fecha, r.estado, r.es_recurrente,r.observaciones,
                          h.hora, h.dia_semana, h.duracion_minutos, h.instrumento, h.modalidad,
                          p.nombre as persona_nombre, 
                          IF(r.es_recurrente=1, 'Fijo', 'Extra') as tipo
@@ -284,39 +284,49 @@ $fechasOcupadas = array_column($proximos, 'fecha');
                         <p style="color: #94a3b8; font-size: 1.1rem;">No hay turnos registrados.</p>
                     </div>
                 <?php else: ?>
-                    <?php foreach ($proximos as $t): ?>
-                        <div class="turno-item">
-                            <div style="flex: 1;">
-                                <div style="font-weight: 800; font-size: 1.3rem; display: flex; align-items: center; color: #fff; flex-wrap: wrap; gap: 12px;">
-                                    <?= date('d/m', strtotime((string)$t['fecha'])) ?> — <?= substr((string)$t['hora'], 0, 5) ?> hs
-                                    <span class="badge-estado estado-<?= strtolower($t['estado']) ?>">
-                                        <?= h(ucfirst($t['estado'])) ?>
-                                    </span>
-                                </div>
-                                
-                                <div style="font-size: 1.1rem; margin-top: 8px; color: #cbd5e1;">
-                                    <i class="fas fa-user-circle" style="color: var(--accent); margin-right: 5px;"></i>
-                                    <?= str_contains($userRol, 'profesor') ? 'Alumno' : 'Profesor' ?>: 
-                                    <strong style="color: #fff;"><?= h((string)$t['persona_nombre']) ?></strong>
-                                </div>
+    <?php foreach ($proximos as $t): ?>
+        <div class="turno-item">
+            <div style="flex: 1;">
+                <div style="font-weight: 800; font-size: 1.3rem; display: flex; align-items: center; color: #fff; flex-wrap: wrap; gap: 12px;">
+                    <?= date('d/m', strtotime((string)$t['fecha'])) ?> — <?= substr((string)$t['hora'], 0, 5) ?> hs
+                    <span class="badge-estado estado-<?= strtolower($t['estado']) ?>">
+                        <?= h(ucfirst($t['estado'])) ?>
+                    </span>
+                </div>
+                
+                <div style="font-size: 1.1rem; margin-top: 8px; color: #cbd5e1;">
+                    <i class="fas fa-user-circle" style="color: var(--accent); margin-right: 5px;"></i>
+                    <?= str_contains($userRol, 'profesor') ? 'Alumno' : 'Profesor' ?>: 
+                    <strong style="color: #fff;"><?= h((string)$t['persona_nombre']) ?></strong>
+                </div>
 
-                                <div style="display: flex; gap: 12px; margin-top: 10px; flex-wrap: wrap;">
-                                    <span style="color: #94a3b8; font-size: 0.9rem;"><i class="far fa-clock"></i> <?= $t['duracion_minutos'] ?> min</span>
-                                    <span style="color: #94a3b8; font-size: 0.9rem;"><i class="fas fa-music"></i> <?= h((string)$t['instrumento']) ?></span>
-                                </div>
-                            </div>
+                <div style="display: flex; gap: 12px; margin-top: 10px; flex-wrap: wrap;">
+                    <span style="color: #94a3b8; font-size: 0.9rem;"><i class="far fa-clock"></i> <?= $t['duracion_minutos'] ?> min</span>
+                    <span style="color: #94a3b8; font-size: 0.9rem;"><i class="fas fa-music"></i> <?= h((string)$t['instrumento']) ?></span>
+                </div>
 
-                            <div style="text-align: right; min-width: 160px;">
-                                <div class="badge-tipo tipo-<?= strtolower($t['tipo']) ?>" style="margin-bottom: 10px;">
-                                    TURNO <?= strtoupper($t['tipo']) ?>
-                                </div>
-                                <div style="font-size: 0.9rem; color: #fff;">
-                                    <i class="fas fa-video" style="color: var(--accent);"></i> <?= h((string)($t['modalidad'] ?? 'Presencial')) ?>
-                                </div>
-                            </div>
-                        </div>
-                    <?php endforeach; ?>
+                <?php if (!empty($t['observaciones'])): ?>
+                    <div style="margin-top: 15px; padding: 12px; background: rgba(139, 92, 246, 0.08); border-left: 3px solid #8b5cf6; border-radius: 8px;">
+                        <span style="display: block; color: #a78bfa; font-size: 0.65rem; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px; font-weight: 800;">Descripción</span>
+                        <p style="margin: 0; font-size: 0.95rem; line-height: 1.4; color: #e2e8f0;">
+                            <i class="fas fa-info-circle" style="margin-right: 5px; opacity: 0.6;"></i>
+                            <?= h((string)$t['observaciones']) ?>
+                        </p>
+                    </div>
                 <?php endif; ?>
+            </div>
+
+            <div style="text-align: right; min-width: 160px;">
+                <div class="badge-tipo tipo-<?= strtolower($t['tipo']) ?>" style="margin-bottom: 10px;">
+                    TURNO <?= strtoupper($t['tipo']) ?>
+                </div>
+                <div style="font-size: 0.9rem; color: #fff;">
+                    <i class="fas fa-video" style="color: var(--accent);"></i> <?= h((string)($t['modalidad'] ?? 'Presencial')) ?>
+                </div>
+            </div>
+        </div>
+    <?php endforeach; ?>
+<?php endif; ?>
             </div>
         </div>
     </main>
