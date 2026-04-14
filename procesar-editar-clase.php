@@ -30,7 +30,7 @@ if ($reserva_id <= 0) {
     exit;
 }
 
-$sql = "SELECT r.id AS reserva_id, r.fecha, r.usuario_id, r.horario_id,
+$sql = "SELECT r.id AS reserva_id, r.fecha, r.suscripcion_id, r.usuario_id, r.horario_id,
                h.hora, h.duracion_minutos, h.tipo_turno, h.modalidad, h.profesor_id, h.instrumento,
                u.nombre AS alumno_nombre
         FROM reservas r
@@ -130,6 +130,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['btn_guardar'])) {
         }
 
         $conn->begin_transaction();
+        // --- LÓGICA DE SUSCRIPCIÓN (Usando columna 'activo') ---
+        $suscripcion_id = $reserva['suscripcion_id'];
+
+        if ($nuevo_tipo === 'fijo' && empty($suscripcion_id)) {
+            // Caso A: De Extra a Fijo -> Crear nueva suscripción activa
+            $stmtS = $conn->prepare("INSERT INTO suscripciones (usuario_id, horario_id, fecha_inicio, activo) VALUES (?, ?, ?, 1)");
+            $stmtS->bind_param("iis", $nuevo_usuario_id, $horario_id, $nueva_fecha);
+            $stmtS->execute();
+            $suscripcion_id = $conn->insert_id;
+        } 
+        elseif ($nuevo_tipo === 'extra' && !empty($suscripcion_id)) {
+            // Caso B: De Fijo a Extra -> Desactivar suscripción anterior
+            $fecha_ayer = date('Y-m-d', strtotime($nueva_fecha . ' -1 day'));
+            $stmtS = $conn->prepare("UPDATE suscripciones SET activo = 0, fecha_fin = ? WHERE id = ?");
+            $stmtS->bind_param("si", $fecha_ayer, $suscripcion_id);
+            $stmtS->execute();
+            
+            // Rompemos el vínculo para esta reserva específica
+            $suscripcion_id = null;
+        }
 
         // Sincronizar estadísticas si cambió el alumno
         if ($nuevo_usuario_id !== $antiguo_usuario_id) {
@@ -142,9 +162,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['btn_guardar'])) {
         $stmtH->bind_param("sssissi", $nueva_fecha, $dia_nombre, $nueva_hora, $nueva_duracion, $nuevo_tipo, $nueva_modalidad, $horario_id);
         $stmtH->execute();
 
-        // B. Actualizar Reserva
-        $stmtR = $conn->prepare("UPDATE reservas SET fecha = ?, usuario_id = ? WHERE id = ?");
-        $stmtR->bind_param("sii", $nueva_fecha, $nuevo_usuario_id, $reserva_id);
+        // B. Actualizar Reserva vinculando el suscripcion_id
+        $stmtR = $conn->prepare("UPDATE reservas SET fecha = ?, usuario_id = ?, suscripcion_id = ? WHERE id = ?");
+        $stmtR->bind_param("siii", $nueva_fecha, $nuevo_usuario_id, $suscripcion_id, $reserva_id);
         $stmtR->execute();
 
         // NOTIFICAR EDICIÓN DE CLASE

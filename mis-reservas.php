@@ -25,6 +25,7 @@ $diasSemana = [1 => "Lunes", 2 => "Martes", 3 => "Miércoles", 4 => "Jueves", 5 
 $sqlActivas = "SELECT 
             r.id AS reserva_id, r.fecha, r.suscripcion_id, r.usuario_id AS alumno_id,
             h.profesor_id, h.id AS horario_id, h.instrumento, h.modalidad, h.duracion_minutos,
+            h.tipo_turno,
             r.estado, h.hora, p.nombre AS nombre_profesor, u.nombre AS nombre_alumno,
             CASE WHEN r.suscripcion_id IS NOT NULL THEN 'Fijo' ELSE 'Individual' END as tipo_label
         FROM reservas r
@@ -42,8 +43,15 @@ $fijosPorDia = [];
 $extrasPorDia = [];
 foreach ($reservasActivas as $r) {
     $numDia = (int)date('w', strtotime($r['fecha']));
-    if ($r['suscripcion_id'] !== null) $fijosPorDia[$numDia][] = $r;
-    else $extrasPorDia[$numDia][] = $r;
+    
+    // Usamos el campo que ahora sí viene en la consulta SQL
+    $tipo = strtolower($r['tipo_turno'] ?? '');
+
+    if ($tipo === 'fijo') {
+        $fijosPorDia[$numDia][] = $r;
+    } else {
+        $extrasPorDia[$numDia][] = $r;
+    }
 }
 
 // --- LÓGICA DE HISTORIAL CON PAGINACIÓN Y AJAX ---

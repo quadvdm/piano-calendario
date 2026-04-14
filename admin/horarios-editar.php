@@ -103,7 +103,52 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         // --- ACTUALIZACIÓN ---
         $conn->begin_transaction();
-        
+
+        // 1. Verificar si este horario tiene una reserva activa para gestionar la suscripción
+        $stRes = $conn->prepare("SELECT id, usuario_id, suscripcion_id FROM reservas WHERE horario_id = ? AND estado IN ('pendiente', 'confirmada') LIMIT 1");
+        $stRes->bind_param('i', $id);
+        $stRes->execute();
+        $reserva_vinculada = $stRes->get_result()->fetch_assoc();
+        $stRes->close();
+
+        $susc_id_actual = $reserva_vinculada['suscripcion_id'] ?? null;
+
+        // Solo operamos si hay un alumno (reserva) vinculado a este horario
+        if ($reserva_vinculada) {
+            $r_id = (int)$reserva_vinculada['id'];
+            $u_id = (int)$reserva_vinculada['usuario_id'];
+
+            if ($tipo === 'fijo' && empty($susc_id_actual)) {
+                // CASO A: De Extra a Fijo -> Creamos suscripción activa
+                $stS = $conn->prepare("INSERT INTO suscripciones (usuario_id, horario_id, fecha_inicio, activo) VALUES (?, ?, ?, 1)");
+                $stS->bind_param("iis", $u_id, $id, $fecha);
+                $stS->execute();
+                $susc_id_actual = $conn->insert_id;
+                $stS->close();
+
+                // Vinculamos la reserva a la nueva suscripción
+                $stUpR = $conn->prepare("UPDATE reservas SET suscripcion_id = ? WHERE id = ?");
+                $stUpR->bind_param('ii', $susc_id_actual, $r_id);
+                $stUpR->execute();
+                $stUpR->close();
+
+            } elseif ($tipo === 'extra' && !empty($susc_id_actual)) {
+                // CASO B: De Fijo a Extra -> Desactivamos la suscripción y liberamos el horario_id
+                $fecha_ayer = date('Y-m-d', strtotime($fecha . ' -1 day'));
+                $stS = $conn->prepare("UPDATE suscripciones SET activo = 0, fecha_fin = ?, horario_id = NULL WHERE id = ?");
+                $stS->bind_param("si", $fecha_ayer, $susc_id_actual);
+                $stS->execute();
+                $stS->close();
+                
+                // Rompemos el vínculo en la reserva (pasa a ser individual)
+                $stUpR = $conn->prepare("UPDATE reservas SET suscripcion_id = NULL WHERE id = ?");
+                $stUpR->bind_param('i', $r_id);
+                $stUpR->execute();
+                $stUpR->close();
+            }
+        }
+
+        // 2. Ejecutar la actualización normal del horario
         $stU = $conn->prepare("UPDATE horarios SET dia_semana=?, fecha_especifica=?, hora=?, duracion_minutos=?, profesor_id=?, instrumento=?, tipo_turno=?, modalidad=? WHERE id=? LIMIT 1");
         $stU->bind_param('sssiisssi', $dia_nombre, $fecha, $hora_inicio, $dur, $prof, $instr, $tipo, $mod, $id);
         
