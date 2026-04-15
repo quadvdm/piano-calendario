@@ -16,6 +16,7 @@ if (empty($_SESSION['logged_in']) || empty($_SESSION['user_id'])) {
 
 $db = Database::getInstance();
 $userId = (int)$_SESSION['user_id'];
+$userRol = strtolower($_SESSION['user_rol'] ?? 'alumno');
 
 function h($s): string { return htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8'); }
 
@@ -271,7 +272,22 @@ include_once 'navbar.php';
 <div class="particles"><div class="particle"></div><div class="particle"></div><div class="particle"></div><div class="particle"></div></div>
 <div class="container">
     <h1>Mis Turnos</h1>
-    <p style="color: var(--text-dim); font-weight: 600; font-size: 0.95rem; margin-bottom: 30px;">Gestiona tus horarios y revisa tu actividad.</p>
+    <div style="display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 20px; margin-bottom: 30px;">
+    <p style="color: var(--text-dim); font-weight: 600; font-size: 0.95rem; margin: 0;">
+        Gestiona tus horarios y revisa tu actividad.
+    </p>
+
+    <?php if (in_array($userRol, ['profesor', 'admin-profesor'])): ?>
+        <p style="background: var(--bg-card); padding: 8px 15px; border-radius: 8px; border: 1px solid var(--border-color); font-size: 0.9rem; color: var(--text-main); margin: 0;">
+            <i class="fas fa-user-edit" style="color: var(--accent); margin-right: 8px;"></i>
+            ¿Quieres asignar un horario personalizado a un alumno? 
+            <a href="alumnos.php" style="color: var(--accent); font-weight: 700; text-decoration: none; margin-left: 5px;">
+                Ir a Alumnos <i class="fas fa-external-link-alt" style="font-size: 0.75rem;"></i>
+            </a>
+        </p>
+    <?php endif; ?>
+</div>
+    
 
     <?php 
     renderTablero($fijosPorDia, "Suscripciones Fijas", "card-fijo", $userId);

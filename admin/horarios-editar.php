@@ -24,13 +24,15 @@ $st->close();
 if (!$h) { header('Location: horarios.php'); exit; }
 
 // --- OBTENER CONFIGURACIONES ---
-$resConf = $conn->query("SELECT clave, valor FROM configuraciones WHERE clave IN ('horario_apertura', 'horario_cierre')");
+$resConf = $conn->query("SELECT clave, valor FROM configuraciones WHERE clave IN ('horario_apertura', 'horario_cierre', 'dias_anticipacion_reserva')");
 $config = [];
 while($rowC = $resConf->fetch_assoc()){
     $config[$rowC['clave']] = $rowC['valor'];
 }
 $h_apertura = $config['horario_apertura'] ?? '08:00';
 $h_cierre   = $config['horario_cierre']   ?? '20:00';
+$dias_anticipacion = (int)($config['dias_anticipacion_reserva'] ?? 7);
+$fecha_minima_habilitar = date('Y-m-d', strtotime("+$dias_anticipacion days"));
 
 $msg = ''; $err = '';
 
@@ -92,12 +94,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         while ($c = $res_c->fetch_assoc()) {
             $h_ini_c = substr($c['hora'], 0, 5);
             $h_fin_c = date('H:i', strtotime($c['hora'] . " + {$c['duracion_minutos']} minutes"));
+            $dia_texto = ($c['tipo_turno'] === 'fijo') ? "fijo recurrente los {$dia_nombre}" : "el día " . date('d/m/Y', strtotime($c['fecha_especifica']));
             
             if ((int)$c['profesor_id'] === $prof) {
                 throw new Exception("El profesor {$c['prof_nombre']} ya tiene clase de {$h_ini_c} a {$h_fin_c} hs.");
             }
-            if ($mod === 'Presencial' && $c['modalidad'] === 'Presencial') {
-                throw new Exception("El salón Presencial ya está ocupado de {$h_ini_c} a {$h_fin_c} hs.");
+            if (strtolower($mod) === 'presencial' && strtolower((string)$c['modalidad']) === 'presencial') {
+                throw new Exception("El salón Presencial ya está ocupado {$dia_texto} de {$h_ini_c} a {$h_fin_c} hs por el profesor {$c['prof_nombre']}.");
             }
         }
 
@@ -208,13 +211,22 @@ require_once __DIR__ . '/header.php';
     <p style="color: #9ca3af; margin-bottom: 20px;">Rango de horario de clases: <?= $h_apertura ?> a <?= $h_cierre ?> hs.</p>
 
     <?php if($err): ?><div class="alert alert-err"><b>✗</b> <?= $err ?></div><?php endif; ?>
+        <div class="info-box">
+    <div style="display: flex; gap: 10px;">
+        <i class="fas fa-info-circle" style="color: var(--accent); margin-top: 3px;"></i> 
+        <div>
+            Configuración de Reservas: Se requieren <strong><?= $dias_anticipacion ?> días</strong> de anticipación.
+            Turnos públicos desde el <strong><?= date('d/m/Y', strtotime($fecha_minima_habilitar)) ?></strong>.
+        </div>
+    </div>
+</div>
 
     <div class="card">
         <form method="post" id="formEditar" action="horarios-editar.php?id=<?= $id ?>&from=<?= urlencode($from) ?>">
             <div class="row">
                 <div>
                     <label>Fecha Específica</label>
-                    <input type="date" class="input" name="fecha_especifica" required value="<?= htmlspecialchars((string)$h['fecha_especifica']) ?>">
+                    <input type="date" class="input" name="fecha_especifica" required min="<?= $fecha_minima_habilitar ?>" value="<?= $_POST['fecha_especifica'] ?? $fecha_minima_habilitar ?>">
                 </div>
                 <div>
                     <label>Hora Inicio</label>

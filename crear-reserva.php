@@ -125,33 +125,39 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['btn_crear'])) {
             }
         }
 
-        $check_sql = "SELECT id FROM horarios WHERE profesor_id = ? AND dia_semana = ? AND hora = ? AND activo = 1";
+        $check_sql = "SELECT id FROM horarios WHERE profesor_id = ? AND dia_semana = ? AND hora = ? AND activo = 1 AND fecha_especifica = ?";
         $stmt_check = $conn->prepare($check_sql);
-        $stmt_check->bind_param("iss", $profesor_id, $dia_semana, $hora);
+        $stmt_check->bind_param("isss", $user_id, $dia_nombre, $hora_inicio, $fecha);
         $stmt_check->execute();
         if ($stmt_check->get_result()->num_rows > 0) {
-            // Si encuentra un registro, frenamos la creación
-            header("Location: horarios-crear.php?error=" . urlencode("El profesor ya tiene un horario publicado ese día a esa hora."));
-            exit;
-            }
-            $stmt_check->close();
+            throw new Exception("Ya has publicado este mismo horario anteriormente.");
+        }
+        $stmt_check->close();
         
-        // --- AUDITORÍA ADMINISTRATIVA ---
+        // --- 1. INSERTAR EL NUEVO HORARIO (ESTO ES LO QUE FALTABA) ---
+        $sqlInsertH = "INSERT INTO horarios (profesor_id, instrumento, dia_semana, fecha_especifica, hora, duracion_minutos, tipo_turno, modalidad, activo) 
+                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)";
+        $stmt = $conn->prepare($sqlInsertH);
+        $stmt->bind_param("issssiss", $user_id, $instr, $dia_nombre, $fecha, $hora_inicio, $dur, $tipo, $mod);
+        
+        // --- 2. AUDITORÍA ADMINISTRATIVA ---
         $nombre_profe = $_SESSION['user_nombre'] ?? 'Un profesor';
-        $dia_esp = $dia_nombre; 
         $hora_f = substr($hora_inicio, 0, 5);
-        $msg_audit = "El profesor $nombre_profe ha publicado un nuevo horario abierto de $instr los días $dia_esp a las $hora_f hs.";
+        $msg_audit = "El profesor $nombre_profe ha publicado un nuevo horario de $instr los días $dia_nombre a las $hora_f hs.";
         
-        $stmtAudit = $conn->prepare("INSERT INTO notificaciones (usuario_id, mensaje, tipo, leido) VALUES (0, ?, 'info', 1)");
+        $stmtAudit = $conn->prepare("INSERT INTO notificaciones (usuario_id, mensaje, tipo, leido) VALUES (0, ?, 'info', 0)");
         $stmtAudit->bind_param("s", $msg_audit);
         $stmtAudit->execute();
         $stmtAudit->close();
         
+        // --- 3. EJECUTAR LA CREACIÓN DEL HORARIO ---
         if ($stmt->execute()) {
             $msg = "¡Horario habilitado correctamente!";
         } else {
             throw new Exception("Error al guardar: " . $conn->error);
         }
+        $stmt->close();
+
     } catch (Exception $e) {
         $err = $e->getMessage();
     }

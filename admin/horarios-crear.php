@@ -10,13 +10,16 @@ $db   = Database::getInstance();
 $conn = $db->getConnection();
 
 // --- 1. OBTENER CONFIGURACIONES ---
-$resConf = $conn->query("SELECT clave, valor FROM configuraciones WHERE clave IN ('horario_apertura', 'horario_cierre')");
+$resConf = $conn->query("SELECT clave, valor FROM configuraciones WHERE clave IN ('horario_apertura', 'horario_cierre','dias_anticipacion_reserva')");
 $config = [];
 while($rowC = $resConf->fetch_assoc()){
     $config[$rowC['clave']] = $rowC['valor'];
 }
 $h_apertura = $config['horario_apertura'] ?? '08:00';
 $h_cierre   = $config['horario_cierre']   ?? '20:00';
+$dias_anticipacion = (int)($config['dias_anticipacion_reserva'] ?? 7);
+
+$fecha_minima_habilitar = date('Y-m-d', strtotime("+$dias_anticipacion days"));
 
 $profesores_data = [];
 $res_p = $conn->query("SELECT id, nombre, especialidad FROM profesores WHERE activo=1 ORDER BY nombre");
@@ -85,12 +88,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         while ($c = $res_c->fetch_assoc()) {
             $h_ini_c = substr($c['hora'], 0, 5);
             $h_fin_c = date('H:i', strtotime($c['hora'] . " + {$c['duracion_minutos']} minutes"));
+            $dia_texto = ($c['tipo_turno'] === 'fijo') ? "fijo recurrente los {$dia_nombre}" : "el día " . date('d/m/Y', strtotime($c['fecha_especifica']));
             
             if ((int)$c['profesor_id'] === $prof) {
                 throw new Exception("El profesor {$c['prof_nombre']} ya tiene clase de {$h_ini_c} a {$h_fin_c} hs.");
             }
-            if ($mod === 'Presencial' && $c['modalidad'] === 'Presencial') {
-                throw new Exception("El salón Presencial ya está ocupado de {$h_ini_c} a {$h_fin_c} hs.");
+            if (strtolower($mod) === 'presencial' && strtolower((string)$c['modalidad']) === 'presencial') {
+                throw new Exception("El salón Presencial ya está ocupado {$dia_texto} de {$h_ini_c} a {$h_fin_c} hs por el profesor {$c['prof_nombre']}.");
             }
         }
 
@@ -145,12 +149,22 @@ require_once __DIR__ . '/header.php';
 
     <?php if($err): ?><div class="alert-err"><b>✗</b> <?= $err ?></div><?php endif; ?>
 
+        <div class="info-box">
+    <div style="display: flex; gap: 10px;">
+        <i class="fas fa-info-circle" style="color: var(--accent); margin-top: 3px;"></i> 
+        <div>
+            Configuración de Reservas: Se requieren <strong><?= $dias_anticipacion ?> días</strong> de anticipación.
+            Turnos públicos desde el <strong><?= date('d/m/Y', strtotime($fecha_minima_habilitar)) ?></strong>.
+        </div>
+    </div>
+</div>
+
     <div class="card">
         <form method="post" id="formCrear">
             <div class="row">
                 <div>
                     <label>Fecha</label>
-                    <input type="date" class="input" name="fecha_especifica" required value="<?= $_POST['fecha_especifica'] ?? date('Y-m-d') ?>">
+                    <input type="date" class="input" name="fecha_especifica" required min="<?= $fecha_minima_habilitar ?>" value="<?= $_POST['fecha_especifica'] ?? $fecha_minima_habilitar ?>">
                 </div>
                 <div>
                     <label>Hora Inicio</label>
@@ -181,10 +195,10 @@ require_once __DIR__ . '/header.php';
                     <label>Modalidad</label>
                     <select name="modalidad" class="input">
                         <?php $m = $_POST['modalidad'] ?? 'Presencial'; ?>
-                        <option value="presencial" <?= $m === 'Presencial' ? 'selected' : '' ?>>Presencial</option>
-                        <option value="virtual" <?= $m === 'Virtual' ? 'selected' : '' ?>>Virtual</option>
-                        <option value="a domicilio" <?= $m === 'A domicilio' ? 'selected' : '' ?>>A domicilio</option>
-                    </select>
+                        <option value="Presencial" <?= $m === 'Presencial' ? 'selected' : '' ?>>Presencial</option>
+                        <option value="Virtual" <?= $m === 'Virtual' ? 'selected' : '' ?>>Virtual</option>
+                        <option value="A domicilio" <?= $m === 'A domicilio' ? 'selected' : '' ?>>A domicilio</option>
+                    </select>                
                 </div>
                 <div>
                     <label>Tipo</label>

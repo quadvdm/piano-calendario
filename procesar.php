@@ -10,6 +10,7 @@ if ($user_id <= 0) {
 }
 
 $db = Database::getInstance();
+$conn = $db->getConnection();
 $accion = $_POST['accion'] ?? 'reservar';
 $redirect = $_POST['from'] ?? 'index.php';
 
@@ -46,23 +47,27 @@ try {
             exit;
     }
 
-    // --- LÓGICA DE MENSAJES DINÁMICA ---
     $origen = $_POST['from'] ?? 'index.php';
     
     if ($origen === 'calendario.php') {
-        // Prioridad al mensaje de error si existe (por ejemplo, el del límite semanal)
         if (isset($_SESSION['mensaje_error'])) {
             $_SESSION['msg_calendario'] = $_SESSION['mensaje_error'];
             unset($_SESSION['mensaje_error']);
         } else {
-            // Si no hay error, usamos el de éxito que viene de los archivos de procesamiento
             $_SESSION['msg_calendario'] = $_SESSION['mensaje_exito'] ?? "Reserva confirmada en el calendario.";
             unset($_SESSION['mensaje_exito']);
         }
     } elseif ($origen === 'profesores.php') {
-        $_SESSION['msg_profesores'] = "Operación realizada con éxito.";
+        if (isset($_SESSION['mensaje_error'])) {
+            $_SESSION['error_profesores'] = $_SESSION['mensaje_error'];
+            unset($_SESSION['mensaje_error']);
+        } else {
+            $_SESSION['msg_profesores'] = $_SESSION['mensaje_exito'] ?? "Operación realizada con éxito.";
+            unset($_SESSION['mensaje_exito']);
+        }
     } elseif ($origen === 'alumnos.php') {
-        $_SESSION['msg_alumnos'] = "Operación realizada correctamente.";
+        $_SESSION['msg_alumnos'] = $_SESSION['mensaje_exito'] ?? "Operación realizada correctamente.";
+        unset($_SESSION['mensaje_exito']);
     } else {
         $_SESSION['mensaje_exito'] = "Operación exitosa.";
     }
@@ -71,7 +76,6 @@ try {
     exit;
 
 } catch (Exception $e) {
-    // Si algo falló en los procesar-*.php, capturamos el mensaje real aquí
     if (isset($conn)) $conn->rollback();
     
     $msg_error = $e->getMessage();
@@ -79,6 +83,8 @@ try {
 
     if ($origen === 'calendario.php') {
         $_SESSION['msg_calendario'] = $msg_error;
+    } elseif ($origen === 'profesores.php') {
+        $_SESSION['error_profesores'] = $msg_error;
     } else {
         $_SESSION['mensaje_error'] = $msg_error;
     }

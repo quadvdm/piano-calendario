@@ -119,11 +119,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['btn_guardar'])) {
             $h_ini_c = substr($c['hora'], 0, 5);
             $h_fin_c = date('H:i', strtotime($c['hora'] . " + {$c['duracion_minutos']} minutes"));
             
-            // 1. Validar agenda del profesor de la reserva
             if ((int)$c['profesor_id'] === $prof_id) {
                 throw new Exception("Ya tienes una clase agendada de {$h_ini_c} a {$h_fin_c} hs.");
             }
-            // 2. Validar disponibilidad del salón (con cualquier profesor)
             if (strtolower($nueva_modalidad) === 'presencial' && strtolower($c['modalidad']) === 'presencial') {
                 throw new Exception("El salón Presencial ya está ocupado de {$h_ini_c} a {$h_fin_c} hs por el profesor {$c['prof_nombre']}.");
             }
@@ -494,8 +492,8 @@ textarea.input {
                 <div class="form-group">
                     <label>Modalidad</label>
                     <select name="modalidad" class="input">
-                        <option value="presencial" <?= strtolower($reserva['modalidad']) == 'presencial' ? 'selected' : '' ?>>Presencial</option>
-                        <option value="virtual" <?= strtolower($reserva['modalidad']) == 'virtual' ? 'selected' : '' ?>>Virtual</option>
+                        <option value="Presencial" <?= strtolower($reserva['modalidad']) == 'presencial' ? 'selected' : '' ?>>Presencial</option>
+                        <option value="Virtual" <?= strtolower($reserva['modalidad']) == 'virtual' ? 'selected' : '' ?>>Virtual</option>
                         <option value="A domicilio" <?= strtolower($reserva['modalidad']) == 'a domicilio' ? 'selected' : '' ?>>A domicilio</option>
                     </select>
                 </div>

@@ -10,7 +10,7 @@ require_once __DIR__ . '/config/database.php';
 
 // 1. Elegimos qué usuario queremos simular (puedes cambiar este ID según tus pruebas)
 // Ejemplo: Cambia a 1, 2, 3 según los usuarios que tengas en tu tabla 'usuarios'
-$id_a_simular = 4; 
+$id_a_simular = 7; 
 
 $db = Database::getInstance();
 $conn = $db->getConnection();

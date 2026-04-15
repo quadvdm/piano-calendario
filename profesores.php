@@ -15,9 +15,12 @@ $profesores = $db->fetchAll("
     ORDER BY p.nombre
 ");
 
-// Manejo de mensajes de sesión
-$mensaje = $_SESSION['msg_profesores'] ?? null;
-unset($_SESSION['msg_profesores']);
+// Manejo de mensajes de sesión (Éxito y Error)
+$mensaje = $_SESSION['msg_profesores'] ?? $_SESSION['msg'] ?? null;
+$error = $_SESSION['error_profesores'] ?? $_SESSION['error'] ?? null;
+
+unset($_SESSION['msg_profesores'], $_SESSION['msg']);
+unset($_SESSION['error_profesores'], $_SESSION['error']);
 ?>
 
 <!DOCTYPE html>
@@ -173,25 +176,38 @@ unset($_SESSION['msg_profesores']);
         box-shadow: 0 10px 25px rgba(139, 92, 246, 0.7); 
     }
 
-    .msg-success { 
-        background: rgba(16,185,129,0.15); 
-        color: #4ade80; 
+    /* ESTILOS DE MENSAJES DE ALERTA */
+    .msg-alert {
         padding: 18px; 
         border-radius: 16px; 
-        border: 1px solid rgba(16,185,129,0.3); 
         text-align: center; 
         margin-bottom: 35px; 
         font-weight: 600;
         backdrop-filter: blur(10px);
+        transition: opacity 0.5s ease;
     }
-</style>
+    .msg-success { 
+        background: rgba(16,185,129,0.15); 
+        color: #4ade80; 
+        border: 1px solid rgba(16,185,129,0.3); 
+    }
+    .msg-error {
+        background: rgba(239, 68, 68, 0.15); 
+        color: #f87171; 
+        border: 1px solid rgba(239, 68, 68, 0.3); 
+    }
+    </style>
 </head>
 <body>
 <div class="particles"><div class="particle"></div><div class="particle"></div><div class="particle"></div><div class="particle"></div></div>
 <div class="container">
 
     <?php if($mensaje): ?>
-        <div class="msg-success"><i class="fas fa-check-circle"></i> <?= $mensaje ?></div>
+        <div class="msg-alert msg-success"><i class="fas fa-check-circle"></i> <?= $mensaje ?></div>
+    <?php endif; ?>
+    
+    <?php if($error): ?>
+        <div class="msg-alert msg-error"><i class="fas fa-exclamation-triangle"></i> <?= $error ?></div>
     <?php endif; ?>
 
     <div style="text-align: center; margin-bottom: 40px;">
@@ -297,11 +313,15 @@ unset($_SESSION['msg_profesores']);
     </div>
 </div>
 
-</body>
-</html>
 <script>
+// Script corregido para que desvanezca CUALQUIER mensaje (Error o Éxito) a los 2 segundos
 setTimeout(() => {
-    const msg = document.querySelector('.alert-success');
-    if(msg) msg.style.display = 'none';
+    const alerts = document.querySelectorAll('.msg-alert');
+    alerts.forEach(alert => {
+        alert.style.opacity = '0';
+        setTimeout(() => alert.style.display = 'none', 500); // 500ms después de que se hace invisible, se quita del espacio
+    });
 }, 2000);
 </script>
+</body>
+</html>

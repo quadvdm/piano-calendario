@@ -38,7 +38,8 @@ while($row = $res_p->fetch_assoc()) {
 // 4. Obtener Horarios disponibles existentes
 $horarios_existentes = [];
 $sql_h = "SELECT h.*, p.nombre AS profesor FROM horarios h JOIN profesores p ON p.id = h.profesor_id
-          WHERE h.activo = 1 AND h.fecha_especifica >= CURDATE() AND h.reservas_actuales < h.capacidad ORDER BY h.fecha_especifica, h.hora";
+          WHERE h.activo = 1 AND h.reservas_actuales < h.capacidad 
+          ORDER BY h.fecha_especifica, h.hora";
 $res_h = $conn->query($sql_h);
 while($row = $res_h->fetch_assoc()) $horarios_existentes[] = $row;
 
@@ -54,11 +55,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['btn_crear'])) {
         $horario_id = 0;
         $fecha_clase = '';
         $hora_inicio = '';
-        $duracion = (int)($_POST['n_duracion'] ?? 60); 
+        $duracion = 60; 
         $tipo_turno = '';
         $prof_id = 0;
         $modalidad = '';
+        $instr = '';
+        $dia_nombre = '';
 
+        // --- 1. RECOLECCIÓN DE DATOS (Existente vs Nuevo) ---
         if ($modo_horario === 'existente') {
             $horario_id = (int)($_POST['horario_id'] ?? 0);
             $stmt_h = $conn->prepare("SELECT * FROM horarios WHERE id = ? AND activo = 1 FOR UPDATE");
@@ -72,17 +76,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['btn_crear'])) {
             $hora_inicio = $h_data['hora'];
             $duracion = (int)$h_data['duracion_minutos'];
             $tipo_turno = $h_data['tipo_turno'];
-            $modalidad = $h_data['modalidad'];
+            $modalidad = ucfirst(strtolower(trim((string)$h_data['modalidad']))); 
             $prof_id = (int)$h_data['profesor_id'];
             $instr = $h_data['instrumento'];
+            $dia_nombre = $h_data['dia_semana'];
+            $hora_fin = date('H:i:s', strtotime($hora_inicio) + ($duracion * 60));
+            
         } else {
-            // --- LÓGICA DE CREAR NUEVO HORARIO ---
             $fecha_clase = $_POST['n_fecha'] ?? '';
             $hora_inicio = trim((string)($_POST['n_hora'] ?? ''));
             $prof_id     = (int)($_POST['n_profesor_id'] ?? 0);
             $instr       = trim((string)($_POST['n_instrumento'] ?? ''));
             $tipo_turno  = $_POST['n_tipo_turno'] ?? 'extra';
-            $modalidad   = $_POST['n_modalidad'] ?? 'Presencial';
+            $modalidad   = ucfirst(strtolower(trim((string)($_POST['n_modalidad'] ?? 'Presencial')))); 
+            $duracion    = (int)($_POST['n_duracion'] ?? 60);
 
             if (empty($fecha_clase) || empty($hora_inicio) || $prof_id === 0 || empty($instr)) {
                 throw new Exception('Por favor completa todos los campos del nuevo horario.');
@@ -92,66 +99,132 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['btn_crear'])) {
             $hora_fin = date('H:i:s', $timestamp_inicio + ($duracion * 60));
             $dias_esp = ['Sunday'=>'Domingo','Monday'=>'Lunes','Tuesday'=>'Martes','Wednesday'=>'Miércoles','Thursday'=>'Jueves','Friday'=>'Viernes','Saturday'=>'Sábado'];
             $dia_nombre = $dias_esp[date('l', $timestamp_inicio)] ?? '';
+        }
 
-            // Consulta de solapamiento unificada y precisa
-            $sql_conf = "SELECT h.id, p.nombre as prof_nombre, h.tipo_turno, h.fecha_especifica, h.modalidad, h.profesor_id, h.hora, h.duracion_minutos 
-                         FROM horarios h 
-                         JOIN profesores p ON h.profesor_id = p.id
-                         WHERE h.activo = 1 AND h.dia_semana = ? 
-                         AND (
-                             (? = 'extra' AND (
-                                 (h.tipo_turno = 'extra' AND h.fecha_especifica = ?) OR 
-                                 (h.tipo_turno = 'fijo' AND h.fecha_especifica <= ?)
-                             ))
-                             OR 
-                             (? = 'fijo' AND (
-                                 (h.tipo_turno = 'fijo') OR 
-                                 (h.tipo_turno = 'extra' AND h.fecha_especifica >= ?)
-                             ))
-                         )
-                         AND (
-                            ? < ADDTIME(h.hora, SEC_TO_TIME(h.duracion_minutos * 60)) 
-                            AND 
-                            ? > h.hora
-                         )";
+        // --- 2. CHEQUEO DEL ALUMNO  ---
+        $sql_alumno_conf = "SELECT r.id, h.hora, h.duracion_minutos, h.tipo_turno, h.fecha_especifica, p.nombre as prof_nombre
+                            FROM reservas r
+                            JOIN horarios h ON r.horario_id = h.id
+                            JOIN profesores p ON h.profesor_id = p.id
+                            WHERE r.usuario_id = ? 
+                            AND r.estado IN ('confirmada', 'pendiente')
+                            AND h.activo = 1
+                            AND h.dia_semana = ?
+                            AND (
+                                (? = 'extra' AND ((h.tipo_turno = 'extra' AND h.fecha_especifica = ?) OR (h.tipo_turno = 'fijo' AND h.fecha_especifica <= ?)))
+                                OR (? = 'fijo' AND ((h.tipo_turno = 'fijo') OR (h.tipo_turno = 'extra' AND h.fecha_especifica >= ?)))
+                            )
+                            AND (? < ADDTIME(h.hora, SEC_TO_TIME(h.duracion_minutos * 60)) AND ? > h.hora)";
 
-            $st_c = $conn->prepare($sql_conf);
-            $st_c->bind_param('ssssssss', 
-                $dia_nombre, 
-                $tipo_turno, $fecha_clase, $fecha_clase, 
-                $tipo_turno, $fecha_clase,
-                $hora_inicio, $hora_fin
-            );
-            $st_c->execute();
-            $res_c = $st_c->get_result();
+        $st_alu = $conn->prepare($sql_alumno_conf);
+        $st_alu->bind_param('issssssss', 
+            $usuario_id, $dia_nombre, $tipo_turno, $fecha_clase, $fecha_clase, $tipo_turno, $fecha_clase, $hora_inicio, $hora_fin
+        );
+        $st_alu->execute();
+        $res_alu = $st_alu->get_result();
 
-            while ($c = $res_c->fetch_assoc()) {
+        if ($c_alu = $res_alu->fetch_assoc()) {
+            $h_ini_c = substr($c_alu['hora'], 0, 5);
+            $h_fin_c = date('H:i', strtotime($c_alu['hora'] . " + {$c_alu['duracion_minutos']} minutes"));
+            $dia_txt = ($c_alu['tipo_turno'] === 'fijo') ? "los $dia_nombre" : "el día " . date('d/m/Y', strtotime($c_alu['fecha_especifica']));
+            throw new Exception("BLOQUEO DE ALUMNO: El alumno ya tiene una clase agendada {$dia_txt} de {$h_ini_c} a {$h_fin_c} hs con {$c_alu['prof_nombre']}.");
+        }
+
+        // --- 2.5. CHEQUEO DE LÍMITE SEMANAL DEL ALUMNO ---
+        if ($max_semanal > 0) {
+            $sql_limite = "SELECT COUNT(*) as total 
+                           FROM reservas r 
+                           JOIN horarios h ON r.horario_id = h.id 
+                           WHERE r.usuario_id = ? 
+                           AND r.estado IN ('confirmada', 'pendiente') 
+                           AND YEARWEEK(h.fecha_especifica, 1) = YEARWEEK(?, 1)";
+            $st_lim = $conn->prepare($sql_limite);
+            $st_lim->bind_param('is', $usuario_id, $fecha_clase);
+            $st_lim->execute();
+            $total_reservas = (int)$st_lim->get_result()->fetch_assoc()['total'];
+
+            if ($total_reservas >= $max_semanal) {
+                throw new Exception("LÍMITE ALCANZADO: El alumno ya tiene {$total_reservas} reservas en la semana del " . date('d/m/Y', strtotime($fecha_clase)) . " (Máximo permitido: {$max_semanal}).");
+            }
+        }
+
+        // --- 3. CHEQUEO DEL PROFESOR Y SALÓN  ---
+        if ($modo_horario === 'nuevo') {
+            $sql_prof_conf = "SELECT h.hora, h.duracion_minutos, h.tipo_turno, h.fecha_especifica, h.modalidad, p.nombre as prof_nombre, h.profesor_id 
+                              FROM horarios h JOIN profesores p ON h.profesor_id = p.id
+                              WHERE h.activo = 1 AND h.dia_semana = ? 
+                              AND (
+                                  (? = 'extra' AND ((h.tipo_turno = 'extra' AND h.fecha_especifica = ?) OR (h.tipo_turno = 'fijo' AND h.fecha_especifica <= ?)))
+                                  OR (? = 'fijo' AND ((h.tipo_turno = 'fijo') OR (h.tipo_turno = 'extra' AND h.fecha_especifica >= ?)))
+                              )
+                              AND (? < ADDTIME(h.hora, SEC_TO_TIME(h.duracion_minutos * 60)) AND ? > h.hora)";
+                         
+            $st_p = $conn->prepare($sql_prof_conf);
+            $st_p->bind_param('ssssssss', $dia_nombre, $tipo_turno, $fecha_clase, $fecha_clase, $tipo_turno, $fecha_clase, $hora_inicio, $hora_fin);
+            $st_p->execute();
+            $res_p_conf = $st_p->get_result();
+
+            while ($c = $res_p_conf->fetch_assoc()) {
                 $h_ini_c = substr($c['hora'], 0, 5);
                 $h_fin_c = date('H:i', strtotime($c['hora'] . " + {$c['duracion_minutos']} minutes"));
                 
                 if ((int)$c['profesor_id'] === $prof_id) {
-                    throw new Exception("El profesor {$c['prof_nombre']} ya tiene clase de {$h_ini_c} a {$h_fin_c} hs.");
+                    throw new Exception("BLOQUEO DE PROFESOR: {$c['prof_nombre']} ya tiene clase de {$h_ini_c} a {$h_fin_c} hs.");
                 }
-                if ($modalidad === 'Presencial' && $c['modalidad'] === 'Presencial') {
-                    throw new Exception("El salón Presencial ya está ocupado de {$h_ini_c} a {$h_fin_c} hs.");
+                if (strtolower($modalidad) === 'presencial' && strtolower((string)$c['modalidad']) === 'presencial') {
+                    throw new Exception("BLOQUEO DE SALÓN: El espacio Presencial está ocupado de {$h_ini_c} a {$h_fin_c} hs.");
                 }
             }
 
-            // Insertar el nuevo horario 
+            // Si llegamos acá, el horario nuevo es seguro. Lo creamos:
             $ins_h = $conn->prepare("INSERT INTO horarios (dia_semana, hora, duracion_minutos, profesor_id, instrumento, tipo_turno, fecha_especifica, capacidad, reservas_actuales, modalidad, activo) VALUES (?, ?, ?, ?, ?, ?, ?, 1, 1, ?, 1)");
             $ins_h->bind_param('ssiissss', $dia_nombre, $hora_inicio, $duracion, $prof_id, $instr, $tipo_turno, $fecha_clase, $modalidad);
             $ins_h->execute();
             $horario_id = (int)$conn->insert_id;
         }
 
-        // --- INSERCIÓN DE LA RESERVA ---
-        $ins_r = $conn->prepare("INSERT INTO reservas (usuario_id, horario_id, fecha, estado, observaciones) VALUES (?, ?, ?, ?, ?)");
-        $ins_r->bind_param('iisss', $usuario_id, $horario_id, $fecha_clase, $nuevo_estado, $observaciones);
+        // --- 4. GESTIÓN DE SUSCRIPCIÓN (Si es turno fijo) ---
+        $suscripcion_id = null; 
+
+        if ($tipo_turno === 'fijo') {
+            // Verificar si el alumno ya tiene una suscripción activa para este horario
+            $st_check_s = $conn->prepare("SELECT id FROM suscripciones WHERE usuario_id = ? AND horario_id = ? AND activo = 1");
+            $st_check_s->bind_param('ii', $usuario_id, $horario_id);
+            $st_check_s->execute();
+            $res_s = $st_check_s->get_result();
+
+            if ($res_s->num_rows > 0) {
+                // Si ya existe, recuperamos el ID
+                $suscripcion_id = (int)$res_s->fetch_assoc()['id'];
+            } else {
+                // Si no existe, la creamos y capturamos el ID generado
+                $st_ins_s = $conn->prepare("INSERT INTO suscripciones (usuario_id, horario_id, fecha_inicio, activo) VALUES (?, ?, ?, 1)");
+                $st_ins_s->bind_param('iis', $usuario_id, $horario_id, $fecha_clase);
+                $st_ins_s->execute();
+                $suscripcion_id = (int)$conn->insert_id;
+            }
+        }
+
+        $ins_r = $conn->prepare("INSERT INTO reservas (usuario_id, horario_id, suscripcion_id, fecha, estado, observaciones) VALUES (?, ?, ?, ?, ?, ?)");
+        $ins_r->bind_param('iiisss', $usuario_id, $horario_id, $suscripcion_id, $fecha_clase, $nuevo_estado, $observaciones);
         $ins_r->execute();
 
-        // --- NOTIFICAR AL ALUMNO Y AL PROFESOR ---
+        // --- 4.5. INTEGRACIÓN CON SUSCRIPCIONES  ---
+        if ($tipo_turno === 'fijo') {
+            // Verificar si el alumno ya tiene una suscripción activa para este horario
+            $st_check_s = $conn->prepare("SELECT id FROM suscripciones WHERE usuario_id = ? AND horario_id = ? AND activo = 1");
+            $st_check_s->bind_param('ii', $usuario_id, $horario_id);
+            $st_check_s->execute();
+            if ($st_check_s->get_result()->num_rows === 0) {
+                // Si no existe, la creamos
+                $st_ins_s = $conn->prepare("INSERT INTO suscripciones (usuario_id, horario_id, fecha_inicio, activo) VALUES (?, ?, ?, 1)");
+                $st_ins_s->bind_param('iis', $usuario_id, $horario_id, $fecha_clase);
+                $st_ins_s->execute();
+            }
+        }
+
+        // --- 5. NOTIFICACIONES Y COMMIT ---
         $id_sesion = (int)($_SESSION['user_id'] ?? 0);
-        
         $res_alu = $conn->query("SELECT nombre, apellido FROM usuarios WHERE id=$usuario_id");
         $alu_data = $res_alu->fetch_assoc();
         $nombre_alu_completo = trim(($alu_data['nombre'] ?? '') . ' ' . ($alu_data['apellido'] ?? ''));
@@ -164,20 +237,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['btn_crear'])) {
         $hora_f = substr($hora_inicio, 0, 5);
         $estado_txt = ($nuevo_estado === 'pendiente') ? ' (Pendiente a confirmar)' : '';
 
-        // Notificar al Alumno
         if ($id_sesion !== $usuario_id) {
             $msg_alu = "La administración te ha agendado una reserva de $instr con $nombre_pro_completo el $fecha_f a las $hora_f hs ($tipo_turno, $modalidad)$estado_txt.";
             enviarNotificacion($conn, $usuario_id, $msg_alu, 'success', 'mis-reservas.php');
         }
 
-        // Notificar al Profesor
         if ($id_sesion !== $prof_id) {
             $msg_pro = "La administración te ha asignado una reserva de $instr con el alumno $nombre_alu_completo el $fecha_f a las $hora_f hs ($tipo_turno, $modalidad)$estado_txt.";
             enviarNotificacion($conn, $prof_id, $msg_pro, 'info', 'mis-reservas.php');
         }
-        // ------------------------------------------------
 
-        // Si el horario era existente, actualizar el contador de reservas
         if ($modo_horario === 'existente') {
             $conn->query("UPDATE horarios SET reservas_actuales = reservas_actuales + 1 WHERE id = $horario_id");
         }
@@ -231,7 +300,7 @@ require_once __DIR__ . '/header.php';
 
 <details class="info-guide">
     <summary><i class="fas fa-question-circle"></i> <span>¿Ayuda con las reservas?</span></summary>
-    <p>• <strong>Turnos FIJOS:</strong> Reciclan o crean suscripción.<br>• <strong>Límite:</strong> Máximo <?= $max_semanal ?> reservas/semana.<br>• <strong>Solapamiento:</strong> Se valida contra el horario academia, profesor y alumno.</p>
+    <p>• <strong>Turnos:</strong> Se puede usar un horario existente o crear uno nuevo desde aqui.<br>• <strong>Límite:</strong> Máximo <?= $max_semanal ?> reservas semanales por alumno.</p>
 </details>
 
 <div class="card">
