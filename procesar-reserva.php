@@ -102,11 +102,13 @@ try {
     }
 
     // 5. INSERTAR RESERVA
+    $observaciones = trim((string)($_POST['observaciones'] ?? '')); // Capturamos la nota
+
     $sql = "INSERT INTO reservas (usuario_id, horario_id, fecha, estado, fecha_reserva, es_recurrente, observaciones)
-            VALUES (?, ?, ?, 'confirmada', NOW(), 0, '')
-            ON DUPLICATE KEY UPDATE estado = 'confirmada', fecha_reserva = NOW()";
+            VALUES (?, ?, ?, 'confirmada', NOW(), 0, ?)
+            ON DUPLICATE KEY UPDATE estado = 'confirmada', fecha_reserva = NOW(), observaciones = ?";
     $stmt = $conn->prepare($sql);
-    $stmt->bind_param("iis", $user_id, $horario_id, $fecha_reserva);
+    $stmt->bind_param("iisss", $user_id, $horario_id, $fecha_reserva, $observaciones, $observaciones);
     
     if ($stmt->execute()) {
         $conn->query("UPDATE horarios SET reservas_actuales = reservas_actuales + 1 WHERE id = $horario_id");
@@ -132,6 +134,11 @@ try {
         // 1. Notificar SIEMPRE al alumno
         $mensaje_alumno = "Se ha asignado un turno extra de $inst con $nom_prof para el $dia_esp $fecha_f a las $hora_f hs.";
         enviarNotificacion($conn, $id_alumno, $mensaje_alumno, 'success', 'mis-reservas.php');
+
+        if (!empty($observaciones)) {
+            $msg_obs = "Nota sobre tu turno extra de $inst ($fecha_f): \"$observaciones\"";
+            enviarNotificacion($conn, $id_alumno, $msg_obs, 'info', 'mis-reservas.php');
+        }
 
         // 2. Notificar al profesor
         if ($id_usuario_profe > 0 && $id_sesion !== $id_usuario_profe) {

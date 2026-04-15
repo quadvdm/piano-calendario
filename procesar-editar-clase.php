@@ -68,6 +68,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['btn_guardar'])) {
         $nuevo_tipo      = $_POST['tipo_turno'] ?? 'extra';
         $nueva_modalidad = $_POST['modalidad'] ?? 'Presencial';
         $prof_id         = (int)$reserva['profesor_id'];
+        $observaciones   = trim((string)($_POST['observaciones'] ?? ''));
         
         $nuevo_usuario_id = (int)($_POST['usuario_id'] ?? $reserva['usuario_id']);
         $antiguo_usuario_id = (int)$reserva['usuario_id'];
@@ -161,8 +162,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['btn_guardar'])) {
         $stmtH->execute();
 
         // B. Actualizar Reserva vinculando el suscripcion_id
-        $stmtR = $conn->prepare("UPDATE reservas SET fecha = ?, usuario_id = ?, suscripcion_id = ? WHERE id = ?");
-        $stmtR->bind_param("siii", $nueva_fecha, $nuevo_usuario_id, $suscripcion_id, $reserva_id);
+        $stmtR = $conn->prepare("UPDATE reservas SET fecha = ?, usuario_id = ?, suscripcion_id = ?, observaciones = ? WHERE id = ?");
+        $stmtR->bind_param("siisi", $nueva_fecha, $nuevo_usuario_id, $suscripcion_id, $observaciones, $reserva_id);
         $stmtR->execute();
 
         // NOTIFICAR EDICIÓN DE CLASE
@@ -189,6 +190,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['btn_guardar'])) {
         } else {
             $msg_alu = "Se han modificado los detalles de tu clase $tipo_str de $inst con $nom_prof del $dia_esp $fecha_f a las $hora_f hs.";
             enviarNotificacion($conn, $id_alumno, $msg_alu, 'warning', 'mis-reservas.php');
+
+            if (!empty($observaciones)) {
+                $msg_obs = "El profesor ha dejado una nota en tu clase de $inst ($fecha_f): \"$observaciones\"";
+                enviarNotificacion($conn, $id_alumno, $msg_obs, 'info', 'mis-reservas.php');
+            }
         }
 
         $conn->commit();
@@ -498,6 +504,16 @@ textarea.input {
                     </select>
                 </div>
             </div>
+
+            <div class="field-group" style="margin-bottom: 20px;">
+    <label style="display: block; font-weight: 600; margin-bottom: 5px; color: var(--text-main);">
+        Descripción / Notas para el Alumno
+    </label>
+    <textarea name="observaciones" class="input-style" rows="3" 
+              placeholder="Escribe una nota que el alumno recibirá..." 
+              style="width: 100%; resize: vertical; padding: 10px; border-radius: 8px; border: 1px solid var(--border-color);"><?= htmlspecialchars($reserva['observaciones'] ?? '') ?></textarea>
+    <small style="color: var(--text-dim);">Si escribes algo aquí, se enviará con lo escrito una notificación al alumno.</small>
+</div>
 
             <button type="submit" name="btn_guardar" class="btn-save">
                 <i class="fas fa-save"></i> Guardar Cambios

@@ -240,7 +240,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['btn_crear'])) {
         if ($id_sesion !== $usuario_id) {
             $msg_alu = "La administración te ha agendado una reserva de $instr con $nombre_pro_completo el $fecha_f a las $hora_f hs ($tipo_turno, $modalidad)$estado_txt.";
             enviarNotificacion($conn, $usuario_id, $msg_alu, 'success', 'mis-reservas.php');
+
+            if (!empty($observaciones)) {
+                $msg_obs = "Nota de administración para tu clase de $instr ($fecha_f): \"$observaciones\"";
+                enviarNotificacion($conn, $usuario_id, $msg_obs, 'info', 'mis-reservas.php');
+            }
         }
+
+        
 
         if ($id_sesion !== $prof_id) {
             $msg_pro = "La administración te ha asignado una reserva de $instr con el alumno $nombre_alu_completo el $fecha_f a las $hora_f hs ($tipo_turno, $modalidad)$estado_txt.";
@@ -360,7 +367,7 @@ require_once __DIR__ . '/header.php';
         </div>
 
         <div class="form-group">
-            <label>Estado Inicial y Observaciones</label>
+            <label>Estado Inicial y Descripcion</label>
             <div style="display:grid; grid-template-columns: 1fr 2fr; gap:10px;">
                 <select name="estado"><option value="confirmada">✓ Confirmada</option><option value="pendiente">⏳ Pendiente</option></select>
                 <input type="text" name="descripcion" placeholder="Notas...">

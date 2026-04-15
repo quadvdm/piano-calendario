@@ -114,11 +114,13 @@ $res_sol = $st_sol->get_result();
     }
 
     // 5. INSERTAR O ACTUALIZAR RESERVA
-    $sqlReserva = "INSERT INTO reservas (usuario_id, horario_id, fecha, estado, es_recurrente, suscripcion_id)
-                   VALUES (?, ?, ?, 'confirmada', 1, ?)
-                   ON DUPLICATE KEY UPDATE estado = 'confirmada', es_recurrente = 1, suscripcion_id = ?";
+    $observaciones = trim((string)($_POST['observaciones'] ?? '')); 
+
+    $sqlReserva = "INSERT INTO reservas (usuario_id, horario_id, fecha, estado, es_recurrente, suscripcion_id, observaciones)
+                   VALUES (?, ?, ?, 'confirmada', 1, ?, ?)
+                   ON DUPLICATE KEY UPDATE estado = 'confirmada', es_recurrente = 1, suscripcion_id = ?, observaciones = ?";
     $stmt = $conn->prepare($sqlReserva);
-    $stmt->bind_param("iisii", $user_id, $horario_id, $fecha_inicio, $sus_id, $sus_id);
+    $stmt->bind_param("iisiiss", $user_id, $horario_id, $fecha_inicio, $sus_id, $observaciones, $sus_id, $observaciones);
     $stmt->execute();
 
     // 6. ESTADÍSTICAS Y CONTADORES
@@ -156,6 +158,12 @@ $res_sol = $st_sol->get_result();
     // 1. Notificar al alumno
     $msg_alumno = "Se ha asignado una suscripción fija de $inst con $nom_prof para los días $dia_f_esp a las $hora_f hs.";
     enviarNotificacion($conn, $id_alumno, $msg_alumno, 'success', 'mis-reservas.php');
+
+    // 1.5 Notificación EXCLUSIVA de la nota
+    if (!empty($observaciones)) {
+        $msg_obs = "Nota sobre tu suscripción fija de $inst ($dia_f_esp): \"$observaciones\"";
+        enviarNotificacion($conn, $id_alumno, $msg_obs, 'info', 'mis-reservas.php');
+    }
 
     // 2. Notificar al profesor
     if ($id_usuario_profe > 0 && $id_sesion !== $id_usuario_profe) {

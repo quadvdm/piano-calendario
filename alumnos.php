@@ -74,6 +74,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['asignar_clase'])) {
         $hora_fin = date('H:i:s', strtotime("+$duracion minutes", strtotime($hora_inicio)));
         $dia_nombre = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'][date('w', strtotime($fecha))];
 
+        // --- 0. VALIDACIÓN DE LÍMITE SEMANAL DEL ALUMNO ANTES DE CREAR NADA ---
+        $resConfig_lim = $conn->query("SELECT valor FROM configuraciones WHERE clave = 'max_reservas_semana' LIMIT 1");
+        $max_permitido = (int)($resConfig_lim->fetch_assoc()['valor'] ?? 2);
+
+        if ($max_permitido > 0) {
+            $fecha_obj_lim = new DateTime($fecha);
+            $lunes_lim = (clone $fecha_obj_lim)->modify('monday this week')->format('Y-m-d');
+            $domingo_lim = (clone $fecha_obj_lim)->modify('sunday this week')->format('Y-m-d');
+
+            $sql_lim = "SELECT COUNT(*) as total FROM reservas 
+                        WHERE usuario_id = ? AND fecha BETWEEN ? AND ? 
+                        AND estado IN ('confirmada', 'pendiente')";
+            $st_lim = $conn->prepare($sql_lim);
+            $st_lim->bind_param('iss', $alumno_id, $lunes_lim, $domingo_lim);
+            $st_lim->execute();
+            $ya_tiene = (int)$st_lim->get_result()->fetch_assoc()['total'];
+
+            if ($ya_tiene >= $max_permitido) {
+                throw new Exception("Límite alcanzado: El alumno ya tiene {$ya_tiene} de {$max_permitido} clases para la semana del " . $fecha_obj_lim->format('d/m') . ".");
+            }
+        }
+
         // 1. VALIDACIÓN INTEGRAL DE CONFLICTOS
         $sql_check = "SELECT h.id, h.profesor_id, h.modalidad, h.instrumento, h.hora, h.duracion_minutos, h.tipo_turno, h.fecha_especifica,
                              r.usuario_id, 
@@ -105,16 +127,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['asignar_clase'])) {
         $stmt_check = $conn->prepare($sql_check);
         
         $stmt_check->bind_param("ssssssssss", 
-            $dia_nombre,    
-            $tipo_turno,    
-            $fecha,         
-            $fecha,         
-            $tipo_turno,    
-            $fecha,         
-            $hora_fin,      
-            $hora_inicio,  
-            $hora_inicio,   
-            $hora_fin       
+            $dia_nombre, $tipo_turno, $fecha, $fecha, $tipo_turno, $fecha, $hora_fin, $hora_inicio, $hora_inicio, $hora_fin       
         );
         $stmt_check->execute();
         $res_check = $stmt_check->get_result();
@@ -132,12 +145,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['asignar_clase'])) {
 
             $detalle_fecha = $es_fijo_conflicto ? "en su turno recurrente" : "el día " . date('d/m', strtotime($fecha_conflicto));
 
+            // ¡Corrección del mensaje! 
             if ((int)$conflict['profesor_id'] === $profesor_logueado_id) {
-                throw new Exception("Ya tienes una clase de {$instr_c} {$detalle_fecha} de {$rango}.");
+                throw new Exception("TÚ ya tienes una clase de {$instr_c} dictándose {$detalle_fecha} de {$rango}.");
             }
 
             if (isset($conflict['usuario_id']) && (int)$conflict['usuario_id'] === $alumno_id) {
-                throw new Exception("El alumno ya tiene clase de {$instr_c} con {$prof_c} {$detalle_fecha} de {$rango}.");
+                throw new Exception("EL ALUMNO ya tiene clase de {$instr_c} con {$prof_c} {$detalle_fecha} de {$rango}.");
             }
 
             if (strtolower($modalidad) === 'presencial' && strtolower((string)$conflict['modalidad']) === 'presencial') {
@@ -145,8 +159,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['asignar_clase'])) {
             }
         }
 
-        $conn->begin_transaction();
-
+        // 2. CREACIÓN DEL HORARIO
         $sql_h = "INSERT INTO horarios (profesor_id, dia_semana, hora, duracion_minutos, instrumento, tipo_turno, fecha_especifica, modalidad, capacidad, reservas_actuales, activo) 
                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, 0, 1)";
         $stmt_h = $conn->prepare($sql_h);
@@ -154,6 +167,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['asignar_clase'])) {
         $stmt_h->execute();
         $nuevo_horario_id = $conn->insert_id;
 
+        // 3. PASAMOS DATOS AL PROCESADOR
         $_POST['horario_id'] = $nuevo_horario_id;
         $_POST['fecha_seleccionada'] = $fecha;
         $_POST['observaciones'] = $observaciones; 
@@ -165,11 +179,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['asignar_clase'])) {
             require 'procesar-reserva.php';
         }
 
-        $conn->commit();
+        // --- 4. ESCUCHAR SI HUBO UN ERROR EN EL PROCESADOR ---
+        if (isset($_SESSION['mensaje_error'])) {
+            $err_proc = $_SESSION['mensaje_error'];
+            unset($_SESSION['mensaje_error']); // Limpiamos
+            // Eliminamos el horario fantasma
+            $conn->query("DELETE FROM horarios WHERE id = $nuevo_horario_id");
+            throw new Exception($err_proc);
+        }
+
         $mensaje_js = "{status: 'success', text: '¡Clase agendada correctamente!', id: $alumno_id}";
 
     } catch (Exception $e) {
-        if(isset($conn) && $conn->connect_errno == 0) $conn->rollback();
         $mensaje_js = "{status: 'error', text: '" . $e->getMessage() . "', id: $alumno_id, nombre: '$alumno_nombre'}";
     }
 }
@@ -522,7 +543,7 @@ textarea.input {
                     <option value="pendiente">⏳ Pendiente</option>
                 </select>
             </div>
-            <div class="input-group"><label>Observaciones</label>
+            <div class="input-group"><label>Descripcion/Nota</label>
                 <textarea name="observaciones" class="input-style"></textarea>
             </div>
             <button type="submit" class="btn-add-class" style="background: var(--accent); color: white; width: 100%; margin-top: 10px; font-size: 14px;">CONFIRMAR Y AGENDAR</button>

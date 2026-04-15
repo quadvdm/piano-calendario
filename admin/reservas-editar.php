@@ -177,7 +177,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     enviarNotificacion($conn, $prof_id, $msg_est_pro, 'info', 'mis-reservas.php');
                 }
             }
-            // ----------------------------------------
+
+            if (!empty($observaciones)) {
+                $msg_obs = "Administración dejó una nota en tu clase de {$reserva['instrumento']} ($fecha_f): \"$observaciones\"";
+                enviarNotificacion($conn, $nuevo_usuario_id, $msg_obs, 'info', 'mis-reservas.php');
+            }
+
 
             $conn->commit();
             echo "<script>window.location.href='reservas.php?ok=1';</script>";
@@ -256,7 +261,7 @@ $hora_f = substr($reserva['hora'], 0, 5);
             </div>
 
             <div class="field-group">
-                <label>Descripción / Observaciones</label>
+                <label>Descripción / Notas</label>
                 <textarea name="descripcion" rows="4"><?= h((string)$reserva['observaciones']) ?></textarea>
             </div>
 
