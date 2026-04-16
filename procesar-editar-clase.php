@@ -129,26 +129,43 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['btn_guardar'])) {
         }
 
         $conn->begin_transaction();
-        // --- LÓGICA DE SUSCRIPCIÓN (Usando columna 'activo') ---
+        // --- LÓGICA DE SUSCRIPCIÓN (Manejo a prueba de Duplicados) ---
         $suscripcion_id = $reserva['suscripcion_id'];
 
-        if ($nuevo_tipo === 'fijo' && empty($suscripcion_id)) {
-            // Caso A: De Extra a Fijo -> Crear nueva suscripción activa
-            $stmtS = $conn->prepare("INSERT INTO suscripciones (usuario_id, horario_id, fecha_inicio, activo) VALUES (?, ?, ?, 1)");
-            $stmtS->bind_param("iis", $nuevo_usuario_id, $horario_id, $nueva_fecha);
-            $stmtS->execute();
-            $suscripcion_id = $conn->insert_id;
+        if ($nuevo_tipo === 'fijo') {
+            // Buscamos si ya existe una suscripción (activa o inactiva) para este alumno y horario
+            $stCheckSus = $conn->prepare("SELECT id FROM suscripciones WHERE usuario_id = ? AND horario_id = ? LIMIT 1");
+            $stCheckSus->bind_param("ii", $nuevo_usuario_id, $horario_id);
+            $stCheckSus->execute();
+            $resCheckSus = $stCheckSus->get_result()->fetch_assoc();
+
+            if ($resCheckSus) {
+                // Si ya existía, la RECICLAMOS (Evita el Duplicate Entry)
+                $suscripcion_id = (int)$resCheckSus['id'];
+                $stUpdSus = $conn->prepare("UPDATE suscripciones SET activo = 1, fecha_inicio = ?, fecha_fin = NULL WHERE id = ?");
+                $stUpdSus->bind_param("si", $nueva_fecha, $suscripcion_id);
+                $stUpdSus->execute();
+            } else {
+                // Si nunca existió, LA CREAMOS
+                $stmtS = $conn->prepare("INSERT INTO suscripciones (usuario_id, horario_id, fecha_inicio, activo) VALUES (?, ?, ?, 1)");
+                $stmtS->bind_param("iis", $nuevo_usuario_id, $horario_id, $nueva_fecha);
+                $stmtS->execute();
+                $suscripcion_id = $conn->insert_id;
+            }
         } 
-        elseif ($nuevo_tipo === 'extra' && !empty($suscripcion_id)) {
-            // Caso B: De Fijo a Extra -> Desactivar suscripción anterior
-            $fecha_ayer = date('Y-m-d', strtotime($nueva_fecha . ' -1 day'));
-            $stmtS = $conn->prepare("UPDATE suscripciones SET activo = 0, fecha_fin = ? WHERE id = ?");
-            $stmtS->bind_param("si", $fecha_ayer, $suscripcion_id);
-            $stmtS->execute();
-            
-            // Rompemos el vínculo para esta reserva específica
+        elseif ($nuevo_tipo === 'extra') {
+            // Si el turno pasa a EXTRA, simplemente "dormimos" la suscripción actual
+            if (!empty($suscripcion_id)) {
+                $fecha_ayer = date('Y-m-d', strtotime($nueva_fecha . ' -1 day'));
+                $stmtS = $conn->prepare("UPDATE suscripciones SET horario_id = NULL, activo = 0, fecha_fin = ? WHERE id = ?");
+                $stmtS->bind_param("si", $fecha_ayer, $suscripcion_id);
+                $stmtS->execute();
+            }
+            // Desvinculamos el ID para que la reserva quede como Extra puro
             $suscripcion_id = null;
         }
+
+        // Sincronizar estadísticas si cambió el alumno
 
         // Sincronizar estadísticas si cambió el alumno
         if ($nuevo_usuario_id !== $antiguo_usuario_id) {

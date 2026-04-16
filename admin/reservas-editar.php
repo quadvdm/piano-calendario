@@ -87,7 +87,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($reserva['tipo_turno'] === 'fijo' && $nuevo_usuario_id !== $antiguo_usuario_id) {
                 
                 // 1. DESACTIVAR SUSCRIPCIÓN DEL ALUMNO ANTERIOR
-                $stOld = $conn->prepare("UPDATE suscripciones SET activo = 0, fecha_fin = ? WHERE usuario_id = ? AND horario_id = ? AND activo = 1");
+                $stOld = $conn->prepare("UPDATE suscripciones SET horario_id = NULL, activo = 0, fecha_fin = ? WHERE usuario_id = ? AND horario_id = ? AND activo = 1");
                 $stOld->bind_param('sii', $hoy, $antiguo_usuario_id, $horario_id);
                 $stOld->execute();
                 
