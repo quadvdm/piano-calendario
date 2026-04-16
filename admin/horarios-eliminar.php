@@ -26,7 +26,7 @@ try {
     $reservas = $db->fetchAll("SELECT id FROM reservas WHERE horario_id = ? LIMIT 1", [$id]);
     
     if (!empty($reservas)) {
-        header('Location: horarios.php?error=' . urlencode('No se puede eliminar: El horario tiene reservas realizadas. Cancela o traslada las reservas primero.'));
+        header('Location: horarios.php?error=' . urlencode('No se puede eliminar: El horario tiene reservas realizadas. Cancela las reserva primero.'));
         exit;
     }
 

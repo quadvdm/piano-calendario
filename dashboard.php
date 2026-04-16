@@ -29,12 +29,24 @@ include_once 'navbar.php';
 
 
 date_default_timezone_set('America/Argentina/Buenos_Aires');
+date_default_timezone_set('America/Argentina/Buenos_Aires');
 $ahora = date('Y-m-d H:i:s');
+
+$meses_traduccion = [
+    'January'   => 'Enero',   'February' => 'Febrero', 'March'    => 'Marzo',
+    'April'     => 'Abril',   'May'      => 'Mayo',    'June'     => 'Junio',
+    'July'      => 'Julio',   'August'   => 'Agosto',  'September'=> 'Septiembre',
+    'October'   => 'Octubre', 'November' => 'Noviembre','December' => 'Diciembre'
+];
+
+$nombre_mes_ingles = date('F');
+$mes_en_espanol = $meses_traduccion[$nombre_mes_ingles];
 
 if (str_contains($userRol, 'profesor')) {
     $sqlIdProf = "SELECT id FROM profesores WHERE nombre = (SELECT nombre FROM usuarios WHERE id = ?)";
     $profesorData = $db->fetchAll($sqlIdProf, [$userId]);
     $profesorIdReal = !empty($profesorData) ? (int)$profesorData[0]['id'] : 0;
+    $profesorIdReal = $userId;
 
     $sqlTurnos = "SELECT r.fecha, r.estado, r.es_recurrente,r.observaciones,
                          h.hora, h.dia_semana, h.duracion_minutos, h.instrumento, h.modalidad,
@@ -335,7 +347,7 @@ $fechasOcupadas = array_column($proximos, 'fecha');
     <div class="glass-card mini-calendar">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
             <div>
-                <h3 style="margin: 0; font-size: 1.1rem; text-transform: capitalize;"><?= date('F Y') ?></h3>
+                <h3 style="margin: 0; font-size: 1.1rem; text-transform: capitalize;"><?= $mes_en_espanol ?> <?= date('Y') ?></h3>
                 <p style="margin: 0; font-size: 0.75rem; color: #94a3b8;">Actividad mensual</p>
             </div>
             <div style="background: rgba(139, 92, 246, 0.1); padding: 5px 10px; border-radius: 8px; border: 1px solid rgba(139, 92, 246, 0.2);">

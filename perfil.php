@@ -7,7 +7,7 @@ $user_id = $_SESSION['user_id'] ?? 0;
 if ($user_id <= 0) { header('Location: login.php'); exit; }
 
 
-$sql = "SELECT u.*, p.email AS email_profesor, p.descripcion, p.clases_dictadas 
+$sql = "SELECT u.*, p.nombre AS nombre_profesor, p.email AS email_profesor, p.descripcion, p.clases_dictadas 
         FROM usuarios u 
         LEFT JOIN profesores p ON u.id = p.id 
         WHERE u.id = ?";
@@ -25,9 +25,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['actualizar_perfil']))
     $avatar_path = $usuario_actual['avatar'] ?? null;
 
     if (!empty($_FILES['avatar']['name'])) {
+        $max_size = 5 * 1024 * 1024; // 5 MB en bytes
+
+        // 1. Validar el peso
+        if ($_FILES['avatar']['size'] > $max_size) {
+            header("Location: perfil.php?error=size");
+            exit;
+        }
+
+        // 2. Validar que realmente sea una imagen 
+        $finfo = finfo_open(FILEINFO_MIME_TYPE);
+        $mime_type = finfo_file($finfo, $_FILES['avatar']['tmp_name']);
+        finfo_close($finfo);
+        
+        $permitidos = ['image/jpeg', 'image/png', 'image/webp'];
+        if (!in_array($mime_type, $permitidos)) {
+            header("Location: perfil.php?error=type");
+            exit;
+        }
+
+        // 3. Subir la imagen si todo está correcto
         $dir = "uploads/avatars/";
         if (!is_dir($dir)) mkdir($dir, 0777, true);
+        
         $ext = pathinfo($_FILES['avatar']['name'], PATHINFO_EXTENSION);
+        $ext = preg_replace('/[^a-zA-Z0-9]/', '', $ext); 
         $nombre_archivo = "user_" . $user_id . "_" . time() . "." . $ext;
         $ruta_final = $dir . $nombre_archivo;
 
@@ -43,10 +65,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['actualizar_perfil']))
     $db->query($sqlU, [$nuevo_nombre, $nuevo_apellido, $nuevo_tel, $avatar_path, $user_id]);
 
     if ($es_profe) {
+        $nombre_publico = trim((string)($_POST['nombre_publico'] ?? $usuario_actual['nombre_profesor']));
         $email_alt = $_POST['email_profesor'] ?? '';
         $desc = $_POST['descripcion'] ?? '';
+
         $sqlP = "UPDATE profesores SET nombre = ?, telefono = ?, email = ?, descripcion = ? WHERE id = ?";
-        $db->query($sqlP, [$nuevo_nombre, $nuevo_tel, $email_alt, $desc, $user_id]);
+        $db->query($sqlP, [$nombre_publico, $nuevo_tel, $email_alt, $desc, $user_id]);
     }
 
     header("Location: perfil.php?success=1");
@@ -63,6 +87,12 @@ $res_activas = $db->fetchAll($sql_activas, [$user_id]);
 $total_activas = (int)($res_activas[0]['total'] ?? 0);
 
 $mensaje_exito = isset($_GET['success']) ? "¡Perfil actualizado con éxito!" : null;
+
+$mensaje_error = null;
+if (isset($_GET['error'])) {
+    if ($_GET['error'] === 'size') $mensaje_error = "Error: La imagen supera el límite de 5MB.";
+    if ($_GET['error'] === 'type') $mensaje_error = "Error: Formato no válido. Solo se permiten JPG, PNG o WEBP.";
+}
 ?>
 
 <!DOCTYPE html>
@@ -192,6 +222,12 @@ $mensaje_exito = isset($_GET['success']) ? "¡Perfil actualizado con éxito!" : 
         </div>
     <?php endif; ?>
 
+    <?php if($mensaje_error): ?>
+        <div style="background:rgba(239,68,68,0.2); color:#ef4444; padding:15px; border-radius:12px; margin-bottom:20px; text-align:center; border:1px solid #ef4444; font-size: 14px;">
+            <?= $mensaje_error ?>
+        </div>
+    <?php endif; ?>
+
     <div class="glass-card">
         <form id="perfilForm" method="POST" enctype="multipart/form-data">
             
@@ -261,6 +297,11 @@ $mensaje_exito = isset($_GET['success']) ? "¡Perfil actualizado con éxito!" : 
                 </div>
 
                 <?php if($es_profe): ?>
+                    <div class="full-width">
+                        <label class="form-label">Nombre Público (Como te ven los alumnos)</label>
+                        <input type="text" name="nombre_publico" class="input-dark detect-change" value="<?= h($usuario_actual['nombre_profesor'] ?? '') ?>" placeholder="Ej: Profe Juan, o Juan Pérez">
+                    </div>
+                    
                     <div class="mobile-full">
                         <label class="form-label">Email Público</label>
                         <input type="email" name="email_profesor" class="input-dark detect-change" value="<?= h($usuario_actual['email_profesor'] ?? '') ?>">
@@ -303,6 +344,12 @@ $mensaje_exito = isset($_GET['success']) ? "¡Perfil actualizado con éxito!" : 
     avatarInput.onchange = function (evt) {
         const [file] = this.files;
         if (file) {
+            if (file.size > 5 * 1024 * 1024) {
+                alert("La imagen pesa más de 5MB. Por favor, selecciona una más ligera.");
+                this.value = ""; 
+                return; 
+            }
+            
             avatarPreview.innerHTML = `<img src="${URL.createObjectURL(file)}">`;
             checkChanges();
         }
