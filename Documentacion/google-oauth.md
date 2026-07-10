@@ -72,6 +72,16 @@ Google Identity Services (GIS/GSI) — la librería moderna de Google para OAuth
 ### redirect_uri
 - En el flujo **popup** (login.php): `postmessage` (requerimiento estricto de Google para popups)
 - En el flujo **redirect** (index.php): `https://animamusica.ar/login.php`
+URIs de redireccionamiento autorizados
+Para usar con solicitudes de un servidor web
+URI 1
+https://animamusica.ar/index.php
+URI 2
+https://animamusica.ar/login.php
+URI 3
+https://animamusica.ar/
+URI 4
+https://animamusica.ar/admin/google-oauth-callback.php
 
 ---
 
